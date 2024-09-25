@@ -1,0 +1,5 @@
+# Ignore the Doc folder
+Doc/
+
+# Ignore the .vscode folder
+.vscode/
