@@ -1,0 +1,70 @@
+// #include <iostream>
+// #include <cmath>
+// #include <ctime>
+// #include "../shared/jbutil.h"
+
+
+// // Function to be integrated
+// double f(double x) {
+//    double  mu = 0.0;
+//    double sigma = 1.0;
+
+
+//    return (1 / sqrt(2 * pi * sigma  * sigma)) * exp (-pow(x - mu, 2) / (2 * sigma * sigma));
+// }
+
+
+// double randomInterval() {
+//    return (rand() + 1.0) / (RAND_MAX + 2.0);
+// }
+
+
+// // Monte Carlo Method
+// void MonteCarlo(const int N) {
+
+
+//    std::cerr << "\nImplementation (" << N << " samples)" << std::endl;
+
+
+//    // start timer
+//   double t = jbutil::gettime();
+
+
+//    int M = 0;
+//    double a = -2.0;
+//    double b = 2.0;
+//    double A = 0.0;
+//    double B = 0.5;
+
+
+//    for (int i = 0; i < N; ++i) {
+//        double xi = randomInterval() * (b-a) + a;
+//        double yi = randomInterval() * (B-A) + A;
+
+
+//        if (yi < f(xi)) {
+//            ++M;
+//        }
+//     }
+
+
+//     double estimate = (static_cast<double>(M) / N) * (B-A) * (b-a) + A * (b-a);
+//     std::cerr << "Estimated integral: " << estimate << std::endl;
+
+
+//   t = jbutil::gettime() - t;
+//   std::cerr << "Time taken: " << t << "s" << std::endl;
+
+
+// }
+
+
+// //Main program
+// int main() {
+
+
+//    std::cerr << "Lab 1: Monte Carlo integral" << std::endl;
+//    const int N = int(1E8);
+//    MonteCarlo(N);
+// }
+
