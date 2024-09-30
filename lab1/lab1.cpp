@@ -1,5 +1,7 @@
 #include "montecarlo.h"
 
+using namespace std;
+
 // Estimation function for integration
 double f(double x) {
    const double mu = 0.0;
@@ -44,7 +46,7 @@ void* ThreadMC(void* args) {
 void MonteCarlo(const int N) {
     int M = 0;
 
-    std::cerr << "\nImplementation (" << N << " samples)" << std::endl;
+    cerr << "\nImplementation (" << N << " samples)" << "\n";
 
     // start timer
     double t = jbutil::gettime();
@@ -70,26 +72,26 @@ void MonteCarlo(const int N) {
         pthread_create(&threads[i], nullptr, ThreadMC, &threadArgs[i]);
     }
 
-    // Wait for all threads to complete and combine results
+        // Wait for all threads to complete and combine results
     for (int i = 0; i < nthreads; ++i) {
         pthread_join(threads[i], nullptr);
         M += results[i];
     }
 
     double estimate = (static_cast<double>(M) / N) * (B - A) * (b - a) + A * (b - a);
-    std::cerr << "Estimated integral: " << estimate << std::endl;
+    cerr << "Estimated integral: " << estimate << "\n";
 
     t = jbutil::gettime() - t;
-    std::cerr << "Time taken: " << t << "s" << std::endl;
+    cerr << "Time taken: " << t << "s\n";
 
     // Numerical result using error function
-    double numericalResult = std::erf(sqrt(2));
-    std::cerr << "\nNumerical result using error function: " << numericalResult << std::endl;
+    double numericalResult = erf(sqrt(2));
+    cerr << "\nNumerical result using error function: " << numericalResult << "\n";
 }
 
 // Main program
 int main() {
-    std::cerr << "Lab 1: Monte Carlo integral" << std::endl;
+    cerr << "Lab 1: Monte Carlo integral\n";
     const int N = int(1E8);
     MonteCarlo(N);
 }
