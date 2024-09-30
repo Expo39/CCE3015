@@ -1,6 +1,6 @@
 #include "montecarlo.h"
 
-// Function to be integrated
+// Estimation function for integration
 double f(double x) {
    const double mu = 0.0;
    const double sigma = 1.0;

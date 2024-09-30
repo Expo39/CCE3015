@@ -10,7 +10,7 @@ const double b = 2.0;
 const double A = 0.0;
 const double B = 0.5;
 
-// Function to be integrated
+// Estimation function for integration
 double f(double x);
 
 // Thread-safe Monte Carlo Function with loop unrolling
