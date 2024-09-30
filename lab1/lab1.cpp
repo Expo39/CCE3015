@@ -1,5 +1,4 @@
-#include "../shared/jbutil.h"
-#include <pthread.h>
+#include "montecarlo.h"
 
 // Function to be integrated
 double f(double x) {
@@ -9,32 +8,17 @@ double f(double x) {
    return (1 / sqrt(2 * pi * sigma * sigma)) * exp(-pow(x - mu, 2) / (2 * sigma * sigma));
 }
 
-// Structure to pass arguments to the thread function
-struct ThreadArgs {
-    int N;
-    int* M;
-    double a;
-    double b;
-    double A;
-    double B;
-    jbutil::randgen* rng;
-};
-
 // Thread-safe Monte Carlo Function with loop unrolling
 void* ThreadMC(void* args) {
     ThreadArgs* threadArgs = static_cast<ThreadArgs*>(args);
-    int N = threadArgs->N;
+    int samples = threadArgs->samples;
     int* M = threadArgs->M;
-    double a = threadArgs->a;
-    double b = threadArgs->b;
-    double A = threadArgs->A;
-    double B = threadArgs->B;
     jbutil::randgen* rng = threadArgs->rng;
 
     int localM = 0;
 
     // Unroll the loop by a factor of 4
-    for (int i = 0; i < N; i += 4) { 
+    for (int i = 0; i < samples; i += 4) { 
         double x1 = a + (b - a) * rng->fval();
         double y1 = A + (B - A) * rng->fval();
         if (y1 < f(x1)) localM++;
@@ -58,17 +42,12 @@ void* ThreadMC(void* args) {
 
 // Monte Carlo Method
 void MonteCarlo(const int N) {
+    int M = 0;
 
     std::cerr << "\nImplementation (" << N << " samples)" << std::endl;
 
     // start timer
     double t = jbutil::gettime();
-
-    int M = 0;
-    const double a = -2.0;
-    const double b = 2.0;
-    const double A = 0.0;
-    const double B = 0.5;
 
     // Number of threads available by my personal computer
     const int nthreads = 8;
@@ -84,10 +63,10 @@ void MonteCarlo(const int N) {
     }
 
     // Divide the work among threads
-    const int samplesPerThread = N / nthreads;
+    const int samples = N / nthreads;
     ThreadArgs threadArgs[nthreads];
     for (int i = 0; i < nthreads; ++i) {
-        threadArgs[i] = {samplesPerThread, &results[i], a, b, A, B, &rng[i]};
+        threadArgs[i] = {samples, &results[i], &rng[i]};
         pthread_create(&threads[i], nullptr, ThreadMC, &threadArgs[i]);
     }
 
@@ -110,7 +89,6 @@ void MonteCarlo(const int N) {
 
 // Main program
 int main() {
-
     std::cerr << "Lab 1: Monte Carlo integral" << std::endl;
     const int N = int(1E8);
     MonteCarlo(N);
