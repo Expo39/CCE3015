@@ -14,7 +14,7 @@ double f(double x) {
 void* ThreadMC(void* args) {
     ThreadArgs* threadArgs = static_cast<ThreadArgs*>(args);
     int samples = threadArgs->samples;
-    int* M = threadArgs->M;
+    std::atomic<int>* M = threadArgs->M;
     jbutil::randgen* rng = threadArgs->rng;
 
     int localM = 0;
@@ -44,7 +44,7 @@ void* ThreadMC(void* args) {
 
 // Monte Carlo Method
 void MonteCarlo(const int N) {
-    int M = 0;
+    std::atomic<int> M(0);
 
     cerr << "\nImplementation (" << N << " samples)" << "\n";
 
@@ -56,7 +56,6 @@ void MonteCarlo(const int N) {
 
     // Arrays for threads, results and random numbers
     pthread_t threads[nthreads];
-    int results[nthreads] = {0};
     jbutil::randgen rng[nthreads];
 
     // Initialize random number generators for each thread
@@ -68,14 +67,13 @@ void MonteCarlo(const int N) {
     const int samples = N / nthreads;
     ThreadArgs threadArgs[nthreads];
     for (int i = 0; i < nthreads; ++i) {
-        threadArgs[i] = {samples, &results[i], &rng[i]};
+        threadArgs[i] = ThreadArgs(samples, &M, &rng[i]);
         pthread_create(&threads[i], nullptr, ThreadMC, &threadArgs[i]);
     }
 
-        // Wait for all threads to complete and combine results
+    // Wait for all threads to complete
     for (int i = 0; i < nthreads; ++i) {
         pthread_join(threads[i], nullptr);
-        M += results[i];
     }
 
     double estimate = (static_cast<double>(M) / N) * (B - A) * (b - a) + A * (b - a);
