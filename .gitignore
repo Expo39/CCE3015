@@ -1,5 +1,9 @@
 # Ignore the Doc folder
 Doc/
 
+# Ignore .pgm files in lab2/inputs and lab2/outputs
+lab2/inputs/
+lab2/outputs/
+
 # Ignore the .vscode folder
 .vscode/
