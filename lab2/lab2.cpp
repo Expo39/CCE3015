@@ -84,27 +84,25 @@ real convolve(const jbutil::image<int>& image, real m, real n, int a, real R, co
             v4sf m_vec = { (m / R) - i, (m / R) - i, (m / R) - i, (m / R) - i };
             v4sf n_vec = { (n / R) - j, (n / R) - (j + 1), (n / R) - (j + 2), (n / R) - (j + 3) };
 
-            v4sf lanczos_m = { lanczos(lanczos_values, abs((m / R) - i), a, R),
-                               lanczos(lanczos_values, abs((m / R) - i), a, R),
-                               lanczos(lanczos_values, abs((m / R) - i), a, R),
-                               lanczos(lanczos_values, abs((m / R) - i), a, R) };
+            v4sf lanczos_m = { lanczos(lanczos_values, abs(m_vec[0]), a, R),
+                               lanczos(lanczos_values, abs(m_vec[1]), a, R),
+                               lanczos(lanczos_values, abs(m_vec[2]), a, R),
+                               lanczos(lanczos_values, abs(m_vec[3]), a, R) };
 
-            v4sf lanczos_n = { lanczos(lanczos_values, abs((n / R) - j), a, R),
-                               lanczos(lanczos_values, abs((n / R) - (j + 1)), a, R),
-                               lanczos(lanczos_values, abs((n / R) - (j + 2)), a, R),
-                               lanczos(lanczos_values, abs((n / R) - (j + 3)), a, R) };
+            v4sf lanczos_n = { lanczos(lanczos_values, abs(n_vec[0]), a, R),
+                               lanczos(lanczos_values, abs(n_vec[1]), a, R),
+                               lanczos(lanczos_values, abs(n_vec[2]), a, R),
+                               lanczos(lanczos_values, abs(n_vec[3]), a, R) };
 
-            v4sf w_vec = __builtin_ia32_mulps(lanczos_m, lanczos_n);
+            v4sf weight_vec = __builtin_ia32_mulps(lanczos_m, lanczos_n);
 
             v4sf image_vec = { static_cast<real>(image(0, j, i)),
                                static_cast<real>(image(0, j + 1, i)),
                                static_cast<real>(image(0, j + 2, i)),
                                static_cast<real>(image(0, j + 3, i)) };
 
-            v4sf sum_vec = __builtin_ia32_mulps(image_vec, w_vec);
-            v4sf weight_vec = w_vec;
+            v4sf sum_vec = __builtin_ia32_mulps(image_vec, weight_vec);
 
-            // Use built-in addition
             sum += sum_vec[0] + sum_vec[1] + sum_vec[2] + sum_vec[3];
             weight += weight_vec[0] + weight_vec[1] + weight_vec[2] + weight_vec[3];
         }
@@ -129,12 +127,13 @@ void resample_image_chunk(const ResampleParams<real>& params) {
         int j = 0;
         for (; j <= new_height - 4; j += 4) { // Unroll by a factor of 4
             v4sf j_vec = { static_cast<real>(j), static_cast<real>(j + 1), static_cast<real>(j + 2), static_cast<real>(j + 3) };
+
             v4sf convolve_vec = { convolve(params.image_in, static_cast<real>(i), j_vec[0], params.a, params.R, params.lanczos_values),
                                   convolve(params.image_in, static_cast<real>(i), j_vec[1], params.a, params.R, params.lanczos_values),
                                   convolve(params.image_in, static_cast<real>(i), j_vec[2], params.a, params.R, params.lanczos_values),
                                   convolve(params.image_in, static_cast<real>(i), j_vec[3], params.a, params.R, params.lanczos_values) };
 
-            v4sf rounded_vec = __builtin_ia32_roundps(convolve_vec, 0);
+            v4sf rounded_vec = __builtin_ia32_roundps(convolve_vec, 0x00);
             v4sf min_vec = __builtin_ia32_minps(rounded_vec, (v4sf){255.0f, 255.0f, 255.0f, 255.0f});
             v4sf max_vec = __builtin_ia32_maxps(min_vec, (v4sf){0.0f, 0.0f, 0.0f, 0.0f});
 
@@ -181,7 +180,7 @@ void process(const string infile, const string outfile, const real R, const int 
     vector<thread> threads;
     for (int t = 0; t < num_threads; ++t) {
         int start_col = t * chunk_size + min(t, remainder); // Distribute remainder
-        int end_col = start_col + chunk_size + (t < remainder ? 1 : 0); // Add 1 to first `remainder` threads
+        int end_col = start_col + chunk_size + (t < remainder ? 1 : 0); 
         ResampleParams<real> params = {image_in, image_out, R, a, lanczos_values, start_col, end_col};
         threads.emplace_back(resample_image_chunk<real>, params);
     }
