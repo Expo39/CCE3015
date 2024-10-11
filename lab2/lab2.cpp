@@ -11,17 +11,27 @@
 
 // Resample the image using Lanczos filter
 
-// Lanczos function
+// Precompute Lanczos values
 template <class real>
-real lanczos(real x, int a) {
-    if (x == 0) return 1;
-    if (x < -a || x > a) return 0;
-    return (sin(pi * x) / (pi * x)) * (sin(pi * x / a) / (pi * x / a));
+std::vector<real> precompute_lanczos(int a, int R) {
+    std::vector<real> lanczos_values(a * R + 1);
+    for (int i = 0; i <= a * R; ++i) {
+        real x = static_cast<real>(i) / R;
+        lanczos_values[i] = (x == 0) ? 1 : (sin(pi * x) / (pi * x)) * (sin(pi * x / a) / (pi * x / a));
+    }
+    return lanczos_values;
 }
 
-// Convolution function
+// Lanczos function using precomputed values
 template <class real>
-real convolve(const jbutil::image<int>& image, real m, real n, int a, real R) {
+real lanczos(const std::vector<real>& lanczos_values, real x, int a, int R) {
+    int index = std::min(static_cast<int>(std::abs(x) * R), a * R);
+    return lanczos_values[index];
+}
+
+// Convolution function with loop unrolling
+template <class real>
+real convolve(const jbutil::image<int>& image, real m, real n, int a, real R, const std::vector<real>& lanczos_values) {
     int m_start = std::max(0, static_cast<int>(std::ceil(m / R - a)));
     int m_end = std::min(image.get_cols() - 1, static_cast<int>(std::floor(m / R + a)));
     int n_start = std::max(0, static_cast<int>(std::ceil(n / R - a)));
@@ -30,11 +40,29 @@ real convolve(const jbutil::image<int>& image, real m, real n, int a, real R) {
     real sum = 0.0;
     real weight = 0.0;
 
-    // TODO: Make more efficient
     for (int i = m_start; i <= m_end; ++i) {
-        for (int j = n_start; j <= n_end; ++j) {
-            real w = lanczos((m / R) - i, a) * lanczos((n / R) - j, a);
-            sum += image(0, j, i) * w; // Note: image(0, j, i) accesses the pixel at (i, j) in the first channel
+        int j = n_start;
+        for (; j <= n_end - 3; j += 4) { // Unroll by a factor of 4
+            real w0 = lanczos(lanczos_values, std::abs((m / R) - i), a, R) * lanczos(lanczos_values, std::abs((n / R) - j), a, R);
+            real w1 = lanczos(lanczos_values, std::abs((m / R) - i), a, R) * lanczos(lanczos_values, std::abs((n / R) - (j + 1)), a, R);
+            real w2 = lanczos(lanczos_values, std::abs((m / R) - i), a, R) * lanczos(lanczos_values, std::abs((n / R) - (j + 2)), a, R);
+            real w3 = lanczos(lanczos_values, std::abs((m / R) - i), a, R) * lanczos(lanczos_values, std::abs((n / R) - (j + 3)), a, R);
+
+            sum += image(0, j, i) * w0;
+            sum += image(0, j + 1, i) * w1;
+            sum += image(0, j + 2, i) * w2;
+            sum += image(0, j + 3, i) * w3;
+
+            weight += w0;
+            weight += w1;
+            weight += w2;
+            weight += w3;
+        }
+
+        // Handle remaining iterations
+        for (; j <= n_end; ++j) {
+            real w = lanczos(lanczos_values, std::abs((m / R) - i), a, R) * lanczos(lanczos_values, std::abs((n / R) - j), a, R);
+            sum += image(0, j, i) * w;
             weight += w;
         }
     }
@@ -44,13 +72,22 @@ real convolve(const jbutil::image<int>& image, real m, real n, int a, real R) {
 
 // Compute the convolution for each destination image pixel
 template <class real>
-void resample_image(const jbutil::image<int>& image_in, jbutil::image<int>& image_out, real R, int a) {
+void resample_image(const jbutil::image<int>& image_in, jbutil::image<int>& image_out, real R, int a, const std::vector<real>& lanczos_values) {
     int new_width = image_out.get_cols();
     int new_height = image_out.get_rows();
 
     for (int i = 0; i < new_width; ++i) {
-        for (int j = 0; j < new_height; ++j) {
-            image_out(0, j, i) = std::min(255, std::max(0, round(convolve(image_in, static_cast<real>(i), static_cast<real>(j), a, R))));
+    int j = 0;
+    for (; j <= new_height - 4; j += 4) { // Unroll by a factor of 4
+        image_out(0, j, i) = std::min(255, std::max(0, round(convolve(image_in, static_cast<real>(i), static_cast<real>(j), a, R, lanczos_values))));
+        image_out(0, j + 1, i) = std::min(255, std::max(0, round(convolve(image_in, static_cast<real>(i), static_cast<real>(j + 1), a, R, lanczos_values))));
+        image_out(0, j + 2, i) = std::min(255, std::max(0, round(convolve(image_in, static_cast<real>(i), static_cast<real>(j + 2), a, R, lanczos_values))));
+        image_out(0, j + 3, i) = std::min(255, std::max(0, round(convolve(image_in, static_cast<real>(i), static_cast<real>(j + 3), a, R, lanczos_values))));
+    }
+
+        // Handle remaining iterations
+        for (; j < new_height; ++j) {
+            image_out(0, j, i) = std::min(255, std::max(0, round(convolve(image_in, static_cast<real>(i), static_cast<real>(j), a, R, lanczos_values))));
         }
     }
 }
@@ -70,11 +107,15 @@ void process(const std::string infile, const std::string outfile, const real R, 
     int new_height = int(image_in.get_rows() * R);
     jbutil::image<int> image_out(new_height, new_width, 1);
 
+    // Precompute Lanczos values
+    std::vector<real> lanczos_values = precompute_lanczos<real>(a, R);
+
     // Apply Lanczos resampling
-    resample_image(image_in, image_out, R, a);
+    resample_image(image_in, image_out, R, a, lanczos_values);
 
     // stop timer
     t = jbutil::gettime() - t;
+    
     // save image
     std::ofstream file_out(outfile.c_str());
     image_out.save(file_out);
