@@ -1,97 +1,96 @@
-/*!
- * \file
- * \brief   Lab 2 - SIMD Programming.
- * \author  Johann A. Briffa
- *
- * Template for the solution to Lab 2 practical exercise on image resampling
- * using the Lanczos filter.
- */
+#include "montecarlo.h"
+#include <thread>
 
-#include "../shared/jbutil.h"
+using namespace std;
 
-// Resample the image using Lanczos filter
+// Estimation function for integration
+double f(double x) {
+   const double mu = 0.0;
+   const double sigma = 1.0;
 
-// Lanczos function
-template <class real>
-real lanczos(real x, int a) {
-    if (x == 0) return 1;
-    if (x < -a || x > a) return 0;
-    return (sin(pi * x) / (pi * x)) * (sin(pi * x / a) / (pi * x / a));
+   return (1 / sqrt(2 * pi * sigma * sigma)) * exp(-pow(x - mu, 2) / (2 * sigma * sigma));
 }
 
-// Convolution function
-template <class real>
-real convolve(const jbutil::image<int>& image, real m, real n, int a, real R) {
-    int m_start = std::max(0, static_cast<int>(std::ceil(m / R - a)));
-    int m_end = std::min(image.get_cols() - 1, static_cast<int>(std::floor(m / R + a)));
-    int n_start = std::max(0, static_cast<int>(std::ceil(n / R - a)));
-    int n_end = std::min(image.get_rows() - 1, static_cast<int>(std::floor(n / R + a)));
+// Thread-safe Monte Carlo Function with loop unrolling
+void ThreadMC(ThreadArgs* threadArgs) {
+    int samples = threadArgs->samples;
+    int* M = threadArgs->M;
+    jbutil::randgen* rng = threadArgs->rng;
 
-    real sum = 0.0;
-    real weight = 0.0;
+    int localM = 0;
 
-    // TODO: Make more efficient
-    for (int i = m_start; i <= m_end; ++i) {
-        for (int j = n_start; j <= n_end; ++j) {
-            real w = lanczos((m / R) - i, a) * lanczos((n / R) - j, a);
-            sum += image(0, j, i) * w; // Note: image(0, j, i) accesses the pixel at (i, j) in the first channel
-            weight += w;
-        }
+    // Unroll the loop by a factor of 4
+    for (int i = 0; i < samples; i += 4) { 
+        double x1 = a + (b - a) * rng->fval();
+        double y1 = A + (B - A) * rng->fval();
+        if (y1 < f(x1)) localM++;
+
+        double x2 = a + (b - a) * rng->fval();
+        double y2 = A + (B - A) * rng->fval();
+        if (y2 < f(x2)) localM++;
+
+        double x3 = a + (b - a) * rng->fval();
+        double y3 = A + (B - A) * rng->fval();
+        if (y3 < f(x3)) localM++;
+
+        double x4 = a + (b - a) * rng->fval();
+        double y4 = A + (B - A) * rng->fval();
+        if (y4 < f(x4)) localM++;
     }
 
-    return sum / weight;
+    *M += localM;
 }
 
-// Compute the convolution for each destination image pixel
-template <class real>
-void resample_image(const jbutil::image<int>& image_in, jbutil::image<int>& image_out, real R, int a) {
-    int new_width = image_out.get_cols();
-    int new_height = image_out.get_rows();
+// Monte Carlo Method
+void MonteCarlo(const int N) {
+    int M = 0;
 
-    for (int i = 0; i < new_width; ++i) {
-        for (int j = 0; j < new_height; ++j) {
-            image_out(0, j, i) = std::min(255, std::max(0, round(convolve(image_in, static_cast<real>(i), static_cast<real>(j), a, R))));
-        }
-    }
-}
+    cerr << "\nImplementation (" << N << " samples)" << "\n";
 
-// Resample the image using Lanczos filter
-template <class real>
-void process(const std::string infile, const std::string outfile, const real R, const int a) {
-    // load image
-    jbutil::image<int> image_in;
-    std::ifstream file_in(infile.c_str());
-    image_in.load(file_in);
     // start timer
     double t = jbutil::gettime();
 
-    // Initialize output image with new dimensions
-    int new_width = int(image_in.get_cols() * R);
-    int new_height = int(image_in.get_rows() * R);
-    jbutil::image<int> image_out(new_height, new_width, 1);
+    // Number of threads available by my personal computer
+    const int nthreads = 8;
 
-    // Apply Lanczos resampling
-    resample_image(image_in, image_out, R, a);
+    // Arrays for threads, results and random numbers
+    std::thread threads[nthreads];
+    int results[nthreads] = {0};
+    jbutil::randgen rng[nthreads];
 
-    // stop timer
+    // Initialize random number generators for each thread
+    for (int i = 0; i < nthreads; ++i) {
+        rng[i] = jbutil::randgen(static_cast<unsigned long>(jbutil::gettime() * 1E6) + i);
+    }
+
+    // Divide the work among threads
+    const int samples = N / nthreads;
+    ThreadArgs threadArgs[nthreads];
+    for (int i = 0; i < nthreads; ++i) {
+        threadArgs[i] = {samples, &results[i], &rng[i]};
+        threads[i] = std::thread([&threadArgs, i]() { ThreadMC(&threadArgs[i]); });
+    }
+
+    // Wait for all threads to complete and combine results
+    for (int i = 0; i < nthreads; ++i) {
+        threads[i].join();
+        M += results[i];
+    }
+
+    double estimate = (static_cast<double>(M) / N) * (B - A) * (b - a) + A * (b - a);
+    cerr << "Estimated integral: " << estimate << "\n";
+
     t = jbutil::gettime() - t;
-    // save image
-    std::ofstream file_out(outfile.c_str());
-    image_out.save(file_out);
-    // show time taken
-    std::cerr << "Time taken: " << t << "s" << std::endl;
+    cerr << "Time taken: " << t << "s\n";
+
+    // Numerical result using error function
+    double numericalResult = erf(sqrt(2));
+    cerr << "\nNumerical result using error function: " << numericalResult << "\n";
 }
 
-// Main program entry point
-
-int main(int argc, char *argv[])
-   {
-   std::cerr << "Lab 2: Image resampling with Lanczos filter" << std::endl;
-   if (argc != 5)
-      {
-      std::cerr << "Usage: " << argv[0]
-            << " <infile> <outfile> <scale-factor> <limit>" << std::endl;
-      exit(1);
-      }
-   process<float> (argv[1], argv[2], atof(argv[3]), atoi(argv[4]));
-   }
+// Main program
+int main() {
+    cerr << "Lab 1: Monte Carlo integral\n";
+    const int N = int(1E8);
+    MonteCarlo(N);
+}

@@ -1,0 +1,1 @@
+g++ -o lab2 lab2.cpp -I../shared -lm -mavx2
