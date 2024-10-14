@@ -7,3 +7,6 @@ lab2/outputs/
 
 # Ignore the .vscode folder
 .vscode/
+
+gmon.out
+profile.txt
