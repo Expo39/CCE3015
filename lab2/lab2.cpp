@@ -65,9 +65,9 @@ void precompute_lanczos(jbutil::vector<real>& lanczos_values, int a, int R) {
     }
 }
 
-// Lanczos function using precomputed values
+// Inline lanczos function
 template <class real>
-real lanczos(const jbutil::vector<real>& lanczos_values, real x, int a, int R) {
+inline real lanczos(const jbutil::vector<real>& lanczos_values, real x, int a, int R) {
     int index = min(static_cast<int>(x * R), a * R);
     return lanczos_values[index];
 }
