@@ -33,7 +33,7 @@ void precompute_lanczos(jbutil::vector<real>& lanczos_values, int a, int R) {
     int size = a * R + 1;
     lanczos_values.resize(size);
     int i = 0;
-    for (; i <= size - 4; i += 4) { // Unroll by a factor of 4
+    for (; i <= size - 4; i += 4) { 
         v4sf x = { static_cast<real>(i) / R,
                    static_cast<real>(i + 1) / R,
                    static_cast<real>(i + 2) / R,
@@ -46,6 +46,11 @@ void precompute_lanczos(jbutil::vector<real>& lanczos_values, int a, int R) {
         v4sf sin_pi_x_a = { static_cast<real>(sin(pi_x_a[0])), static_cast<real>(sin(pi_x_a[1])), static_cast<real>(sin(pi_x_a[2])), static_cast<real>(sin(pi_x_a[3])) };
 
         v4sf lanczos_val = __builtin_ia32_divps(__builtin_ia32_mulps(sin_pi_x, sin_pi_x_a), __builtin_ia32_mulps(pi_x, pi_x_a));
+
+        // Compute the value for x == 0
+        v4sf one = {1.0f, 1.0f, 1.0f, 1.0f};
+        v4sf cmp = __builtin_ia32_cmpeqps(x, (v4sf){0.0f, 0.0f, 0.0f, 0.0f});
+        lanczos_val = __builtin_ia32_orps(__builtin_ia32_andps(cmp, one), __builtin_ia32_andnps(cmp, lanczos_val));
 
         lanczos_values[i] = lanczos_val[0];
         lanczos_values[i + 1] = lanczos_val[1];
@@ -63,7 +68,7 @@ void precompute_lanczos(jbutil::vector<real>& lanczos_values, int a, int R) {
 // Lanczos function using precomputed values
 template <class real>
 real lanczos(const jbutil::vector<real>& lanczos_values, real x, int a, int R) {
-    int index = min(static_cast<int>(abs(x) * R), a * R);
+    int index = min(static_cast<int>(x * R), a * R);
     return lanczos_values[index];
 }
 
@@ -80,7 +85,7 @@ real convolve(const jbutil::image<int>& image, real m, real n, int a, real R, co
 
     for (int i = m_start; i <= m_end; ++i) {
         int j = n_start;
-        for (; j <= n_end - 3; j += 4) { // Unroll by a factor of 4
+        for (; j <= n_end - 3; j += 4) { 
             v4sf m_vec = { (m / R) - i, (m / R) - i, (m / R) - i, (m / R) - i };
             v4sf n_vec = { (n / R) - j, (n / R) - (j + 1), (n / R) - (j + 2), (n / R) - (j + 3) };
 
@@ -125,7 +130,7 @@ void resample_image_chunk(const ResampleParams<real>& params) {
 
     for (int i = params.start_col; i < params.end_col; ++i) {
         int j = 0;
-        for (; j <= new_height - 4; j += 4) { // Unroll by a factor of 4
+        for (; j <= new_height - 4; j += 4) { 
             v4sf j_vec = { static_cast<real>(j), static_cast<real>(j + 1), static_cast<real>(j + 2), static_cast<real>(j + 3) };
 
             v4sf convolve_vec = { convolve(params.image_in, static_cast<real>(i), j_vec[0], params.a, params.R, params.lanczos_values),
@@ -179,7 +184,7 @@ void process(const string infile, const string outfile, const real R, const int 
     // Create threads
     vector<thread> threads;
     for (int t = 0; t < num_threads; ++t) {
-        int start_col = t * chunk_size + min(t, remainder); // Distribute remainder
+        int start_col = t * chunk_size + min(t, remainder); 
         int end_col = start_col + chunk_size + (t < remainder ? 1 : 0); 
         ResampleParams<real> params = {image_in, image_out, R, a, lanczos_values, start_col, end_col};
         threads.emplace_back(resample_image_chunk<real>, params);
