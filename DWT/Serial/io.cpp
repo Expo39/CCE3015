@@ -53,29 +53,38 @@ jbutil::vector<size_t> read_shape(const std::string& shape_filename) {
 }
 
 // Function to export data to a binary file
-bool export_data_to_binary(const Custom3DArray<float>& data, const std::string& filename) {
+bool export_data_to_binary(const Wavelet3DResult& data, const std::string& filename) {
     std::ofstream file(filename, std::ios::binary);
     if (!file) {
         std::cerr << "Error opening file for writing: " << filename << std::endl;
         return false;
     }
 
-    size_t depth = data.get_depth();
-    size_t rows = data.get_rows();
-    size_t cols = data.get_cols();
+    auto export_array = [&](const Custom3DArray<float>& array) {
+        size_t depth = array.get_depth();
+        size_t rows = array.get_rows();
+        size_t cols = array.get_cols();
 
-    std::cout << "Exporting data with dimensions: " 
-              << depth << " x " << rows << " x " << cols << std::endl;
+        file.write(reinterpret_cast<const char*>(&depth), sizeof(depth));
+        file.write(reinterpret_cast<const char*>(&rows), sizeof(rows));
+        file.write(reinterpret_cast<const char*>(&cols), sizeof(cols));
 
-    file.write(reinterpret_cast<const char*>(&depth), sizeof(depth));
-    file.write(reinterpret_cast<const char*>(&rows), sizeof(rows));
-    file.write(reinterpret_cast<const char*>(&cols), sizeof(cols));
-
-    for (size_t d = 0; d < depth; ++d) {
-        for (size_t r = 0; r < rows; ++r) {
-            file.write(reinterpret_cast<const char*>(&data(d, r, 0)), cols * sizeof(float));
+        for (size_t d = 0; d < depth; ++d) {
+            for (size_t r = 0; r < rows; ++r) {
+                file.write(reinterpret_cast<const char*>(&array(d, r, 0)), cols * sizeof(float));
+            }
         }
-    }
+    };
+
+    // Export each sub-band
+    export_array(data.LLL);
+    export_array(data.LLH);
+    export_array(data.LHL);
+    export_array(data.LHH);
+    export_array(data.HLL);
+    export_array(data.HLH);
+    export_array(data.HHL);
+    export_array(data.HHH);
 
     file.close();
     return true;

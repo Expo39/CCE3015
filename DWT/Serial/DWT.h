@@ -11,6 +11,17 @@ struct Wavelet2DResult {
     Custom3DArray<float> HH;
 };
 
+struct Wavelet3DResult {
+    Custom3DArray<float> LLL;
+    Custom3DArray<float> LLH;
+    Custom3DArray<float> LHL;
+    Custom3DArray<float> LHH;
+    Custom3DArray<float> HLL;
+    Custom3DArray<float> HLH;
+    Custom3DArray<float> HHL;
+    Custom3DArray<float> HHH;
+};
+
 // Function to perform 1D convolution and subsampling
 jbutil::vector<float> convolve(const jbutil::vector<float>& data, const jbutil::vector<float>& filter);
 
@@ -18,6 +29,6 @@ jbutil::vector<float> convolve(const jbutil::vector<float>& data, const jbutil::
 Wavelet2DResult dwt_2d(const Custom3DArray<float>& data);
 
 // Function to perform 3D wavelet transform
-Custom3DArray<float> dwt_3d(const Wavelet2DResult& slices);
+Wavelet3DResult dwt_3d(const Wavelet2DResult& slices);
 
 #endif // DWT_H

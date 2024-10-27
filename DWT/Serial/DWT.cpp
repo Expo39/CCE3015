@@ -23,11 +23,11 @@ Wavelet2DResult dwt_2d(const Custom3DArray<float>& data) {
     jbutil::vector<float> low_pass_filter;
     jbutil::vector<float> high_pass_filter;
 
-    // Normalized Haar filter
+    // Normalized Low-Pass Haar filter
     low_pass_filter.push_back(1.0f / std::sqrt(2)); 
     low_pass_filter.push_back(1.0f / std::sqrt(2)); 
 
-    // Normalized Haar filter
+    // Normalized High-Pass Haar filter
     high_pass_filter.push_back(1.0f / std::sqrt(2)); 
     high_pass_filter.push_back(-1.0f / std::sqrt(2)); 
 
@@ -91,7 +91,7 @@ Wavelet2DResult dwt_2d(const Custom3DArray<float>& data) {
 }
 
 // Function to perform 3D wavelet transform
-Custom3DArray<float> dwt_3d(const Wavelet2DResult& slices) {
+Wavelet3DResult dwt_3d(const Wavelet2DResult& slices) {
     size_t depth = slices.LL.get_depth();
     size_t rows = slices.LL.get_rows();
     size_t cols = slices.LL.get_cols();
@@ -99,11 +99,11 @@ Custom3DArray<float> dwt_3d(const Wavelet2DResult& slices) {
     jbutil::vector<float> low_pass_filter;
     jbutil::vector<float> high_pass_filter;
 
-    // Normalized Haar filter
+    // Normalized Low-Pass Haar filter
     low_pass_filter.push_back(1.0f / std::sqrt(2)); 
     low_pass_filter.push_back(1.0f / std::sqrt(2)); 
 
-    // Normalized Haar filter
+    // Normalized High-Pass Haar filter
     high_pass_filter.push_back(1.0f / std::sqrt(2)); 
     high_pass_filter.push_back(-1.0f / std::sqrt(2)); 
 
@@ -153,23 +153,6 @@ Custom3DArray<float> dwt_3d(const Wavelet2DResult& slices) {
         }
     }
 
-    // Combine LLL, LLH, LHL, LHH, HLL, HLH, HHL, and HHH into one 3D array for return
-    Custom3DArray<float> wavelet_coeffs(depth, rows * 2, cols * 2); // This will hold all coefficients
-
-    for (size_t d = 0; d < depth / 2; ++d) {
-        for (size_t r = 0; r < rows; ++r) {
-            for (size_t c = 0; c < cols; ++c) {
-                wavelet_coeffs(d, r, c) = LLL(d, r, c);            // LLL coefficients
-                wavelet_coeffs(d, r, c + cols) = LLH(d, r, c);     // LLH coefficients
-                wavelet_coeffs(d, r + rows, c) = LHL(d, r, c);     // LHL coefficients
-                wavelet_coeffs(d, r + rows, c + cols) = LHH(d, r, c); // LHH coefficients
-                wavelet_coeffs(d + depth / 2, r, c) = HLL(d, r, c); // HLL coefficients
-                wavelet_coeffs(d + depth / 2, r, c + cols) = HLH(d, r, c); // HLH coefficients
-                wavelet_coeffs(d + depth / 2, r + rows, c) = HHL(d, r, c); // HHL coefficients
-                wavelet_coeffs(d + depth / 2, r + rows, c + cols) = HHH(d, r, c); // HHH coefficients
-            }
-        }
-    }
-
-    return wavelet_coeffs;
+    // Return the 3D wavelet transform results as a struct
+    return {LLL, LLH, LHL, LHH, HLL, HLH, HHL, HHH};
 }

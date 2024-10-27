@@ -52,7 +52,7 @@ int main() {
     Wavelet2DResult wavelet_2d = dwt_2d(dicom_data);
 
     // Perform the 3D wavelet transform
-    Custom3DArray<float> wavelet_3d = dwt_3d(wavelet_2d);
+    Wavelet3DResult wavelet_3d = dwt_3d(wavelet_2d);
 
     double end_time = jbutil::gettime();
     double elapsed_time = end_time - start_time;
