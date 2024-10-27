@@ -1,11 +1,11 @@
 #include <iostream>
-#include "io.h"            // Include the IO header file
-#include "DWT.h"          // Include the DWT header file
-#include "../shared/jbutil.h" // Include the jbutil header file for timing
-#include <filesystem>     // Include filesystem for checking file existence
+#include "io.h"
+#include "DWT.h"
+#include "../shared/jbutil.h"
+#include <filesystem>
 
 int main() {
-    std::string binary_filename = "../Binary/3/3.bin"; 
+    std::string binary_filename = "../Binary/3/3.bin";
     std::string shape_filename = "../Binary/3/3_shape.txt";
     std::string output_filename = "outputs/3out.bin";
 
@@ -34,9 +34,9 @@ int main() {
     std::cout << "Number of elements: " << num_elements << std::endl;
     std::cout << "Shape dimensions: depth=" << shape[0] << ", rows=" << shape[1] << ", cols=" << shape[2] << std::endl;
 
-    // Read the DICOM data into a 3D array
+    // Read the DICOM data into an array
     Custom3DArray<float> dicom_data = read_dicom_data(binary_filename, depth, rows, cols);
-    
+
     // Check if the data was read correctly
     if (dicom_data.get_depth() == 0 || dicom_data.get_rows() == 0 || dicom_data.get_cols() == 0) {
         std::cerr << "Failed to read DICOM data" << std::endl;
@@ -45,14 +45,14 @@ int main() {
 
     std::cout << "DICOM data read successfully." << std::endl;
 
-    // Measure the time taken for the 2D wavelet transform
+    // Measure the time taken for the 3D wavelet transform
     double start_time = jbutil::gettime();
 
     // Perform the 2D wavelet transform
-    Custom3DArray<float> wavelet_2d_coeffs = perform_2d_wavelet_transform(dicom_data);
+    Wavelet2DResult wavelet_2d = dwt_2d(dicom_data);
 
     // Perform the 3D wavelet transform
-    Custom3DArray<float> wavelet_3d_coeffs = perform_3d_wavelet_transform(wavelet_2d_coeffs);
+    Custom3DArray<float> wavelet_3d = dwt_3d(wavelet_2d);
 
     double end_time = jbutil::gettime();
     double elapsed_time = end_time - start_time;
@@ -61,7 +61,7 @@ int main() {
     std::cout << "Time taken for 3D Wavelet Transform: " << elapsed_time << " seconds" << std::endl;
 
     // Export the transformed data to a binary file
-    if (!export_data_to_binary(wavelet_3d_coeffs, output_filename)) {
+    if (!export_data_to_binary(wavelet_3d, output_filename)) {
         std::cerr << "Failed to export data to binary file" << std::endl;
         return 1;
     }

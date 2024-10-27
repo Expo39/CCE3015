@@ -4,14 +4,14 @@
 #include <sstream>
 #include <filesystem>
 
-// Implement the read_dicom_data function for float
+// Function to read DICOM data from a binary file into an array
 Custom3DArray<float> read_dicom_data(const std::string& filename, size_t depth, size_t rows, size_t cols) {
     Custom3DArray<float> data(depth, rows, cols);
     std::ifstream file(filename, std::ios::binary);
     
     if (!file) {
         std::cerr << "Error opening file: " << filename << std::endl;
-        return data; // Return an empty array
+        return data; 
     }
 
     for (size_t d = 0; d < depth; ++d) {
@@ -20,16 +20,16 @@ Custom3DArray<float> read_dicom_data(const std::string& filename, size_t depth, 
             if (!file) {
                 std::cerr << "Error reading row " << r << " of depth " << d << " from file: " << filename << std::endl;
                 file.close();
-                return data; // Return the partially filled array
+                return data;
             }
         }
     }
 
-    file.close(); // Ensure the file is closed
-    return data; // Return the filled 3D array
+    file.close(); 
+    return data; 
 }
 
-// Read shape implementation
+// Read the dimensions of the collection of images
 jbutil::vector<size_t> read_shape(const std::string& shape_filename) {
     jbutil::vector<size_t> shape;
     std::ifstream file(shape_filename);
@@ -47,7 +47,8 @@ jbutil::vector<size_t> read_shape(const std::string& shape_filename) {
     while (std::getline(ss, item, ',')) {
         shape.push_back(std::stoul(item));
     }
-    
+
+    file.close();
     return shape;
 }
 
