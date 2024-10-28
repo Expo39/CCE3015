@@ -107,7 +107,7 @@ Wavelet3DResult dwt_3d(const Wavelet2DResult& slices) {
     high_pass_filter.push_back(1.0f / std::sqrt(2)); 
     high_pass_filter.push_back(-1.0f / std::sqrt(2)); 
 
-    // Apply 1D convolution and subsampling along the third dimension for each subband
+    // Prepare output arrays for wavelet coefficients
     Custom3DArray<float> LLL(depth / 2, rows, cols);
     Custom3DArray<float> LLH(depth / 2, rows, cols);
     Custom3DArray<float> LHL(depth / 2, rows, cols);
@@ -117,13 +117,14 @@ Wavelet3DResult dwt_3d(const Wavelet2DResult& slices) {
     Custom3DArray<float> HHL(depth / 2, rows, cols);
     Custom3DArray<float> HHH(depth / 2, rows, cols);
 
-    jbutil::vector<float> LL_col(depth);
-    jbutil::vector<float> LH_col(depth);
-    jbutil::vector<float> HL_col(depth);
-    jbutil::vector<float> HH_col(depth);
-
+    // Apply 1D convolution and subsampling along the third dimension for each subband
     for (size_t r = 0; r < rows; ++r) {
         for (size_t c = 0; c < cols; ++c) {
+            jbutil::vector<float> LL_col(depth);
+            jbutil::vector<float> LH_col(depth);
+            jbutil::vector<float> HL_col(depth);
+            jbutil::vector<float> HH_col(depth);
+
             for (size_t d = 0; d < depth; ++d) {
                 LL_col[d] = slices.LL(d, r, c);
                 LH_col[d] = slices.LH(d, r, c);
@@ -153,6 +154,5 @@ Wavelet3DResult dwt_3d(const Wavelet2DResult& slices) {
         }
     }
 
-    // Return the 3D wavelet transform results as a struct
     return {LLL, LLH, LHL, LHH, HLL, HLH, HHL, HHH};
 }
