@@ -1,6 +1,7 @@
 #include <iostream>
 #include "io.h"
 #include "DWT.h"
+#include "filters.h"
 #include "../shared/jbutil.h"
 #include <filesystem>
 
@@ -48,11 +49,12 @@ int main() {
     // Measure the time taken for the 3D wavelet transform
     double start_time = jbutil::gettime();
 
-    // Perform the 2D wavelet transform
-    //Wavelet2DResult wavelet_2d = dwt_2d(dicom_data);
+    // Use the new initialize_filters function
+    Filters filters;
+    initialize_filters(filters, "haar");
 
     // Perform the 3D wavelet transform
-    Wavelet3DResult wavelet_3d = dwt_3d(dicom_data);
+    Wavelet3DResult wavelet_3d = dwt_3d(dicom_data, filters);
 
     double end_time = jbutil::gettime();
     double elapsed_time = end_time - start_time;
