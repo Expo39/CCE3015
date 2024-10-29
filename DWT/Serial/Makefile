@@ -15,7 +15,7 @@ DEBUG_TARGET = ./debug
 RELEASE_TARGET = ./DWT
 
 # Source files
-SRCS = main.cpp io.cpp DWT.cpp filters.cpp
+SRCS = main.cpp io.cpp DWT.cpp 
 
 # Object files
 DEBUG_OBJS = $(patsubst %.cpp, build/%_debug.o, $(SRCS))

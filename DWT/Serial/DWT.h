@@ -3,7 +3,6 @@
 
 #include "../utils.h"
 #include "../shared/jbutil.h"
-#include "filters.h"
 
 struct Wavelet2DResult {
     Custom3DArray<float> LL;
@@ -26,9 +25,10 @@ struct Wavelet3DResult {
 // Function to perform 1D convolution and subsampling
 jbutil::vector<float> convolve(const jbutil::vector<float>& data, const jbutil::vector<float>& filter);
 
-void apply_convolution(const Custom3DArray<float>& input, Custom3DArray<float>& output_low, Custom3DArray<float>& output_high, const jbutil::vector<float>& low_pass_filter, const jbutil::vector<float>& high_pass_filter, size_t dim);
+// Function to perform 2D wavelet transform
+Wavelet2DResult dwt_2d(const Custom3DArray<float>& data);
 
 // Function to perform 3D wavelet transform
-Wavelet3DResult dwt_3d(const Custom3DArray<float>& data, Filters filter);
+Wavelet3DResult dwt_3d(const Custom3DArray<float>& data);
 
 #endif // DWT_H

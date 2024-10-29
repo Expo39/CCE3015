@@ -73,13 +73,22 @@ void apply_convolution(const Custom3DArray<float>& input, Custom3DArray<float>& 
 }
 
 // Function to perform 3D wavelet transform
-Wavelet3DResult dwt_3d(const Custom3DArray<float>& data, Filters filter) {
+Wavelet3DResult dwt_3d(const Custom3DArray<float>& data) {
     size_t depth = data.get_depth();
     size_t rows = data.get_rows();
     size_t cols = data.get_cols();
 
-    jbutil::vector<float> low_pass_filter = filter.low_pass_filter;
-    jbutil::vector<float> high_pass_filter = filter.high_pass_filter;
+    jbutil::vector<float> low_pass_filter;
+    jbutil::vector<float> high_pass_filter;
+
+    // Normalized Low-Pass Haar filter
+    low_pass_filter.push_back(1.0f / std::sqrt(2)); 
+    low_pass_filter.push_back(1.0f / std::sqrt(2)); 
+
+    // Normalized High-Pass Haar filter
+    high_pass_filter.push_back(1.0f / std::sqrt(2)); 
+    high_pass_filter.push_back(-1.0f / std::sqrt(2)); 
+
 
     // Apply 1D convolution and subsampling along the first dimension
     Custom3DArray<float> L(depth / 2, rows, cols);
