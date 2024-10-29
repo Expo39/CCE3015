@@ -18,83 +18,11 @@ jbutil::vector<float> convolve(const jbutil::vector<float>& data, const jbutil::
     return result;
 }
 
-// Function to perform 2D wavelet transform
-Wavelet2DResult dwt_2d(const Custom3DArray<float>& data) {
-    jbutil::vector<float> low_pass_filter;
-    jbutil::vector<float> high_pass_filter;
-
-    // Normalized Low-Pass Haar filter
-    low_pass_filter.push_back(1.0f / std::sqrt(2)); 
-    low_pass_filter.push_back(1.0f / std::sqrt(2)); 
-
-    // Normalized High-Pass Haar filter
-    high_pass_filter.push_back(1.0f / std::sqrt(2)); 
-    high_pass_filter.push_back(-1.0f / std::sqrt(2)); 
-
+// Function to perform 3D wavelet transform
+Wavelet3DResult dwt_3d(const Custom3DArray<float>& data) {
+    size_t depth = data.get_depth();
     size_t rows = data.get_rows();
     size_t cols = data.get_cols();
-    size_t depth = data.get_depth();
-
-    // Prepare output arrays for wavelet coefficients
-    Custom3DArray<float> LL(depth, rows / 2, cols / 2);
-    Custom3DArray<float> LH(depth, rows / 2, cols / 2);
-    Custom3DArray<float> HL(depth, rows / 2, cols / 2);
-    Custom3DArray<float> HH(depth, rows / 2, cols / 2);
-
-    Custom3DArray<float> L_rows(depth, rows, cols / 2);
-    Custom3DArray<float> H_rows(depth, rows, cols / 2);
-
-    // Apply 1D convolution and subsampling along rows
-    for (size_t d = 0; d < depth; ++d) {
-        for (size_t r = 0; r < rows; ++r) {
-            jbutil::vector<float> row_data(cols);
-            for (size_t c = 0; c < cols; ++c) {
-                row_data[c] = data(d, r, c);
-            }
-            jbutil::vector<float> L_row = convolve(row_data, low_pass_filter);
-            jbutil::vector<float> H_row = convolve(row_data, high_pass_filter);
-            for (size_t c = 0; c < static_cast<size_t>(L_row.size()); ++c) {
-                L_rows(d, r, c) = L_row[c];
-                H_rows(d, r, c) = H_row[c];
-            }
-        }
-    }
-
-    // Apply 1D convolution and subsampling along columns
-    for (size_t d = 0; d < depth; ++d) {
-        for (size_t c = 0; c < cols / 2; ++c) {
-            jbutil::vector<float> col_data(rows);
-            for (size_t r = 0; r < rows; ++r) {
-                col_data[r] = L_rows(d, r, c);
-            }
-            jbutil::vector<float> LL_col = convolve(col_data, low_pass_filter);
-            jbutil::vector<float> LH_col = convolve(col_data, high_pass_filter);
-            for (size_t r = 0; r < static_cast<size_t>(LL_col.size()); ++r) {
-                LL(d, r, c) = LL_col[r];
-                LH(d, r, c) = LH_col[r];
-            }
-
-            for (size_t r = 0; r < rows; ++r) {
-                col_data[r] = H_rows(d, r, c);
-            }
-            jbutil::vector<float> HL_col = convolve(col_data, low_pass_filter);
-            jbutil::vector<float> HH_col = convolve(col_data, high_pass_filter);
-            for (size_t r = 0; r < static_cast<size_t>(HL_col.size()); ++r) {
-                HL(d, r, c) = HL_col[r];
-                HH(d, r, c) = HH_col[r];
-            }
-        }
-    }
-
-    // Return the sub-bands directly
-    return {LL, LH, HL, HH};
-}
-
-// Function to perform 3D wavelet transform
-Wavelet3DResult dwt_3d(const Wavelet2DResult& slices) {
-    size_t depth = slices.LL.get_depth();
-    size_t rows = slices.LL.get_rows();
-    size_t cols = slices.LL.get_cols();
 
     jbutil::vector<float> low_pass_filter;
     jbutil::vector<float> high_pass_filter;
@@ -107,49 +35,104 @@ Wavelet3DResult dwt_3d(const Wavelet2DResult& slices) {
     high_pass_filter.push_back(1.0f / std::sqrt(2)); 
     high_pass_filter.push_back(-1.0f / std::sqrt(2)); 
 
-    // Prepare output arrays for wavelet coefficients
-    Custom3DArray<float> LLL(depth / 2, rows, cols);
-    Custom3DArray<float> LLH(depth / 2, rows, cols);
-    Custom3DArray<float> LHL(depth / 2, rows, cols);
-    Custom3DArray<float> LHH(depth / 2, rows, cols);
-    Custom3DArray<float> HLL(depth / 2, rows, cols);
-    Custom3DArray<float> HLH(depth / 2, rows, cols);
-    Custom3DArray<float> HHL(depth / 2, rows, cols);
-    Custom3DArray<float> HHH(depth / 2, rows, cols);
-
-    // Apply 1D convolution and subsampling along the third dimension for each subband
+    // Apply 1D convolution and subsampling along the first dimension
+    Custom3DArray<float> L(depth / 2, rows, cols);
+    Custom3DArray<float> H(depth / 2, rows, cols);
     for (size_t r = 0; r < rows; ++r) {
         for (size_t c = 0; c < cols; ++c) {
-            jbutil::vector<float> LL_col(depth);
-            jbutil::vector<float> LH_col(depth);
-            jbutil::vector<float> HL_col(depth);
-            jbutil::vector<float> HH_col(depth);
-
+            jbutil::vector<float> col(depth);
             for (size_t d = 0; d < depth; ++d) {
-                LL_col[d] = slices.LL(d, r, c);
-                LH_col[d] = slices.LH(d, r, c);
-                HL_col[d] = slices.HL(d, r, c);
-                HH_col[d] = slices.HH(d, r, c);
+                col[d] = data(d, r, c);
+            }
+            jbutil::vector<float> L_col = convolve(col, low_pass_filter);
+            jbutil::vector<float> H_col = convolve(col, high_pass_filter);
+            for (size_t d = 0; d < static_cast<size_t>(L_col.size()); ++d) {
+                L(d, r, c) = L_col[d];
+                H(d, r, c) = H_col[d];
+            }
+        }
+    }
+
+    // Apply 1D convolution and subsampling along the second dimension
+    Custom3DArray<float> LL(depth / 2, rows / 2, cols);
+    Custom3DArray<float> LH(depth / 2, rows / 2, cols);
+    Custom3DArray<float> HL(depth / 2, rows / 2, cols);
+    Custom3DArray<float> HH(depth / 2, rows / 2, cols);
+    for (size_t d = 0; d < depth / 2; ++d) {
+        for (size_t c = 0; c < cols; ++c) {
+            jbutil::vector<float> row(rows);
+            for (size_t r = 0; r < rows; ++r) {
+                row[r] = L(d, r, c);
+            }
+            jbutil::vector<float> LL_row = convolve(row, low_pass_filter);
+            jbutil::vector<float> LH_row = convolve(row, high_pass_filter);
+            for (size_t r = 0; r < static_cast<size_t>(LL_row.size()); ++r) {
+                LL(d, r, c) = LL_row[r];
+                LH(d, r, c) = LH_row[r];
             }
 
-            jbutil::vector<float> LLL_col = convolve(LL_col, low_pass_filter);
-            jbutil::vector<float> LLH_col = convolve(LL_col, high_pass_filter);
-            jbutil::vector<float> LHL_col = convolve(LH_col, low_pass_filter);
-            jbutil::vector<float> LHH_col = convolve(LH_col, high_pass_filter);
-            jbutil::vector<float> HLL_col = convolve(HL_col, low_pass_filter);
-            jbutil::vector<float> HLH_col = convolve(HL_col, high_pass_filter);
-            jbutil::vector<float> HHL_col = convolve(HH_col, low_pass_filter);
-            jbutil::vector<float> HHH_col = convolve(HH_col, high_pass_filter);
+            for (size_t r = 0; r < rows; ++r) {
+                row[r] = H(d, r, c);
+            }
+            jbutil::vector<float> HL_row = convolve(row, low_pass_filter);
+            jbutil::vector<float> HH_row = convolve(row, high_pass_filter);
+            for (size_t r = 0; r < static_cast<size_t>(HL_row.size()); ++r) {
+                HL(d, r, c) = HL_row[r];
+                HH(d, r, c) = HH_row[r];
+            }
+        }
+    }
 
-            for (size_t d = 0; d < static_cast<size_t>(LLL_col.size()); ++d) {
-                LLL(d, r, c) = LLL_col[d];
-                LLH(d, r, c) = LLH_col[d];
-                LHL(d, r, c) = LHL_col[d];
-                LHH(d, r, c) = LHH_col[d];
-                HLL(d, r, c) = HLL_col[d];
-                HLH(d, r, c) = HLH_col[d];
-                HHL(d, r, c) = HHL_col[d];
-                HHH(d, r, c) = HHH_col[d];
+    // Apply 1D convolution and subsampling along the third dimension
+    Custom3DArray<float> LLL(depth / 2, rows / 2, cols / 2);
+    Custom3DArray<float> LLH(depth / 2, rows / 2, cols / 2);
+    Custom3DArray<float> LHL(depth / 2, rows / 2, cols / 2);
+    Custom3DArray<float> LHH(depth / 2, rows / 2, cols / 2);
+    Custom3DArray<float> HLL(depth / 2, rows / 2, cols / 2);
+    Custom3DArray<float> HLH(depth / 2, rows / 2, cols / 2);
+    Custom3DArray<float> HHL(depth / 2, rows / 2, cols / 2);
+    Custom3DArray<float> HHH(depth / 2, rows / 2, cols / 2);
+    for (size_t d = 0; d < depth / 2; ++d) {
+        for (size_t r = 0; r < rows / 2; ++r) {
+            jbutil::vector<float> col(cols);
+            for (size_t c = 0; c < cols; ++c) {
+                col[c] = LL(d, r, c);
+            }
+            jbutil::vector<float> LLL_col = convolve(col, low_pass_filter);
+            jbutil::vector<float> LLH_col = convolve(col, high_pass_filter);
+            for (size_t c = 0; c < static_cast<size_t>(LLL_col.size()); ++c) {
+                LLL(d, r, c) = LLL_col[c];
+                LLH(d, r, c) = LLH_col[c];
+            }
+
+            for (size_t c = 0; c < cols; ++c) {
+                col[c] = LH(d, r, c);
+            }
+            jbutil::vector<float> LHL_col = convolve(col, low_pass_filter);
+            jbutil::vector<float> LHH_col = convolve(col, high_pass_filter);
+            for (size_t c = 0; c < static_cast<size_t>(LHL_col.size()); ++c) {
+                LHL(d, r, c) = LHL_col[c];
+                LHH(d, r, c) = LHH_col[c];
+            }
+
+            for (size_t c = 0; c < cols; ++c) {
+                col[c] = HL(d, r, c);
+            }
+            jbutil::vector<float> HLL_col = convolve(col, low_pass_filter);
+            jbutil::vector<float> HLH_col = convolve(col, high_pass_filter);
+            for (size_t c = 0; c < static_cast<size_t>(HLL_col.size()); ++c) {
+                HLL(d, r, c) = HLL_col[c];
+                HLH(d, r, c) = HLH_col[c];
+            }
+
+            for (size_t c = 0; c < cols; ++c) {
+                col[c] = HH(d, r, c);
+            }
+            jbutil::vector<float> HHL_col = convolve(col, low_pass_filter);
+            jbutil::vector<float> HHH_col = convolve(col, high_pass_filter);
+            for (size_t c = 0; c < static_cast<size_t>(HHL_col.size()); ++c) {
+                HHL(d, r, c) = HHL_col[c];
+                HHH(d, r, c) = HHH_col[c];
             }
         }
     }

@@ -29,6 +29,6 @@ jbutil::vector<float> convolve(const jbutil::vector<float>& data, const jbutil::
 Wavelet2DResult dwt_2d(const Custom3DArray<float>& data);
 
 // Function to perform 3D wavelet transform
-Wavelet3DResult dwt_3d(const Wavelet2DResult& slices);
+Wavelet3DResult dwt_3d(const Custom3DArray<float>& data);
 
 #endif // DWT_H

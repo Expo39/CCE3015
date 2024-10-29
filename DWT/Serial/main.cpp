@@ -49,10 +49,10 @@ int main() {
     double start_time = jbutil::gettime();
 
     // Perform the 2D wavelet transform
-    Wavelet2DResult wavelet_2d = dwt_2d(dicom_data);
+    //Wavelet2DResult wavelet_2d = dwt_2d(dicom_data);
 
     // Perform the 3D wavelet transform
-    Wavelet3DResult wavelet_3d = dwt_3d(wavelet_2d);
+    Wavelet3DResult wavelet_3d = dwt_3d(dicom_data);
 
     double end_time = jbutil::gettime();
     double elapsed_time = end_time - start_time;
