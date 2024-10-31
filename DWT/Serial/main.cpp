@@ -1,7 +1,7 @@
-#include <iostream>
 #include "io.h"
 #include "DWT.h"
 #include "../shared/jbutil.h"
+#include <iostream>
 #include <filesystem>
 
 int main() {
@@ -48,11 +48,11 @@ int main() {
     // Measure the time taken for the 3D wavelet transform
     double start_time = jbutil::gettime();
 
-    // Perform the 2D wavelet transform
-    //Wavelet2DResult wavelet_2d = dwt_2d(dicom_data);
+    // Set the number of levels for the multi-level transform
+    int levels = 1; 
 
-    // Perform the 3D wavelet transform
-    Wavelet3DResult wavelet_3d = dwt_3d(dicom_data);
+    // Perform the 3D wavelet transform with the desired number of levels
+    Wavelet3DResult wavelet_3d = dwt_3d(dicom_data, levels);
 
     double end_time = jbutil::gettime();
     double elapsed_time = end_time - start_time;

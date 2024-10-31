@@ -1,7 +1,6 @@
 #include "DWT.h"
-#include <cmath>
-#include <iostream>
 
+// Function to perform 1D convolution
 jbutil::vector<float> convolve(const jbutil::vector<float>& data, bool is_low_pass) {
     size_t data_size = data.size();
     size_t N = data_size / 2;
@@ -15,13 +14,12 @@ jbutil::vector<float> convolve(const jbutil::vector<float>& data, bool is_low_pa
     }
 
     jbutil::vector<float> result(N);
-    float sqrt3 = std::sqrt(3);
 
     // Apply Daubechies-2 coefficients directly
-    float a0 = (1 + sqrt3) / (4 * std::sqrt(2));
-    float a1 = (3 + sqrt3) / (4 * std::sqrt(2));
-    float a2 = (3 - sqrt3) / (4 * std::sqrt(2));
-    float a3 = (1 - sqrt3) / (4 * std::sqrt(2));
+    float a0 = (1 + std::sqrt(3));
+    float a1 = (3 + std::sqrt(3));
+    float a2 = (3 - std::sqrt(3));
+    float a3 = (1 - std::sqrt(3));
 
     for (size_t i = 0; i < N; ++i) {
         float sum = 0.0f;
@@ -32,7 +30,7 @@ jbutil::vector<float> convolve(const jbutil::vector<float>& data, bool is_low_pa
             sum = a3 * s_odd[(i + N - 1) % N] - a2 * s_even[(i + N - 1) % N]
                 + a1 * s_odd[i] - a0 * s_even[i];
         }
-        result[i] = sum;
+        result[i] = sum / (4 * std::sqrt(2));
     }
 
     return result;
@@ -51,8 +49,8 @@ void apply_convolution(const Custom3DArray<float>& input, Custom3DArray<float>& 
                 for (size_t d = 0; d < depth; ++d) {
                     col[d] = input(d, r, c);
                 }
-                jbutil::vector<float> L_col = convolve(col, true);  // Low-pass
-                jbutil::vector<float> H_col = convolve(col, false); // High-pass
+                jbutil::vector<float> L_col = convolve(col, true);  
+                jbutil::vector<float> H_col = convolve(col, false);
                 for (size_t d = 0; d < static_cast<size_t>(L_col.size()); ++d) {
                     output_L(d, r, c) = L_col[d];
                     output_H(d, r, c) = H_col[d];
@@ -66,8 +64,8 @@ void apply_convolution(const Custom3DArray<float>& input, Custom3DArray<float>& 
                 for (size_t r = 0; r < rows; ++r) {
                     row[r] = input(d, r, c);
                 }
-                jbutil::vector<float> L_row = convolve(row, true);  // Low-pass
-                jbutil::vector<float> H_row = convolve(row, false); // High-pass
+                jbutil::vector<float> L_row = convolve(row, true);  
+                jbutil::vector<float> H_row = convolve(row, false);
                 for (size_t r = 0; r < static_cast<size_t>(L_row.size()); ++r) {
                     output_L(d, r, c) = L_row[r];
                     output_H(d, r, c) = H_row[r];
@@ -81,8 +79,8 @@ void apply_convolution(const Custom3DArray<float>& input, Custom3DArray<float>& 
                 for (size_t c = 0; c < cols; ++c) {
                     col[c] = input(d, r, c);
                 }
-                jbutil::vector<float> L_col = convolve(col, true);  // Low-pass
-                jbutil::vector<float> H_col = convolve(col, false); // High-pass
+                jbutil::vector<float> L_col = convolve(col, true);  
+                jbutil::vector<float> H_col = convolve(col, false); 
                 for (size_t c = 0; c < static_cast<size_t>(L_col.size()); ++c) {
                     output_L(d, r, c) = L_col[c];
                     output_H(d, r, c) = H_col[c];
@@ -92,24 +90,11 @@ void apply_convolution(const Custom3DArray<float>& input, Custom3DArray<float>& 
     }
 }
 
-// Function to perform 3D wavelet transform
-Wavelet3DResult dwt_3d(const Custom3DArray<float>& data) {
+// Function to perform multi-level 3D wavelet transform
+Wavelet3DResult dwt_3d(const Custom3DArray<float>& data, int levels) {
     size_t depth = data.get_depth();
     size_t rows = data.get_rows();
     size_t cols = data.get_cols();
-
-    jbutil::vector<float> low_pass_filter;
-    jbutil::vector<float> high_pass_filter;
-    // Initialize Daubechies-2 filter coefficients
-    low_pass_filter.push_back((1 + std::sqrt(3)) / (4 * std::sqrt(2)));
-    low_pass_filter.push_back((3 + std::sqrt(3)) / (4 * std::sqrt(2)));
-    low_pass_filter.push_back((3 - std::sqrt(3)) / (4 * std::sqrt(2)));
-    low_pass_filter.push_back((1 - std::sqrt(3)) / (4 * std::sqrt(2)));
-
-    high_pass_filter.push_back((1 - std::sqrt(3)) / (4 * std::sqrt(2)));
-    high_pass_filter.push_back(-(3 - std::sqrt(3)) / (4 * std::sqrt(2)));
-    high_pass_filter.push_back((3 + std::sqrt(3)) / (4 * std::sqrt(2)));
-    high_pass_filter.push_back(-(1 + std::sqrt(3)) / (4 * std::sqrt(2)));
 
     // Apply 1D convolution and subsampling along the first dimension
     Custom3DArray<float> L(depth / 2, rows, cols);
@@ -137,6 +122,14 @@ Wavelet3DResult dwt_3d(const Custom3DArray<float>& data) {
     apply_convolution(LH, LHL, LHH, 2);
     apply_convolution(HL, HLL, HLH, 2);
     apply_convolution(HH, HHL, HHH, 2);
+
+    // If more levels are required, recursively apply dwt_3d to the LLL sub-band
+    if (levels > 1) {
+        Wavelet3DResult next_level_result = dwt_3d(LLL, levels - 1);
+        // Combine the results from the current level and the next level
+        return {next_level_result.LLL, next_level_result.LLH, next_level_result.LHL, next_level_result.LHH,
+                next_level_result.HLL, next_level_result.HLH, next_level_result.HHL, next_level_result.HHH};
+    }
 
     return {LLL, LLH, LHL, LHH, HLL, HLH, HHL, HHH};
 }
