@@ -22,6 +22,7 @@ jbutil::vector<float> convolve(const jbutil::vector<float>& data, bool is_low_pa
 void apply_convolution(const Custom3DArray<float>& input, Custom3DArray<float>& output_L, Custom3DArray<float>& output_H, size_t dim);
 
 // Function to perform multi-level 3D wavelet transform
-Wavelet3DResult dwt_3d(const Custom3DArray<float>& data, int levels);
+Custom3DArray<float> dwt_3d(const Custom3DArray<float>& data, int levels);
+
 
 #endif // DWT_H

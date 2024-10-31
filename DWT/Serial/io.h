@@ -13,6 +13,6 @@ Custom3DArray<float> read_dicom_data(const std::string& filename, size_t depth, 
 jbutil::vector<size_t> read_shape(const std::string& shape_filename);
 
 // Function to export data to a binary file
-bool export_data_to_binary(const Wavelet3DResult& data, const std::string& filename);
+bool export_data_to_binary(const Custom3DArray<float>& data, const std::string& filename);
 
 #endif // IO_H

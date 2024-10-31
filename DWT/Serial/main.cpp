@@ -52,7 +52,7 @@ int main() {
     int levels = 1; 
 
     // Perform the 3D wavelet transform with the desired number of levels
-    Wavelet3DResult wavelet_3d = dwt_3d(dicom_data, levels);
+    Custom3DArray<float> wavelet_3d = dwt_3d(dicom_data, levels);
 
     double end_time = jbutil::gettime();
     double elapsed_time = end_time - start_time;

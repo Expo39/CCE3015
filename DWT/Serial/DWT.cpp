@@ -37,7 +37,7 @@ jbutil::vector<float> convolve(const jbutil::vector<float>& data, bool is_low_pa
 }
 
 // Function to apply 1D convolution with odd/even separation across a specified dimension
-void apply_convolution(const Custom3DArray<float>& input, Custom3DArray<float>& output_L, Custom3DArray<float>& output_H, size_t dim) {
+void apply_convolution(const Custom3DArray<float>& input, Custom3DArray<float>& output, size_t dim, size_t offset_depth, size_t offset_rows, size_t offset_cols) {
     size_t depth = input.get_depth();
     size_t rows = input.get_rows();
     size_t cols = input.get_cols();
@@ -52,8 +52,8 @@ void apply_convolution(const Custom3DArray<float>& input, Custom3DArray<float>& 
                 jbutil::vector<float> L_col = convolve(col, true);  
                 jbutil::vector<float> H_col = convolve(col, false);
                 for (size_t d = 0; d < static_cast<size_t>(L_col.size()); ++d) {
-                    output_L(d, r, c) = L_col[d];
-                    output_H(d, r, c) = H_col[d];
+                    output(offset_depth + d, offset_rows + r, offset_cols + c) = L_col[d];
+                    output(offset_depth + d + depth / 2, offset_rows + r, offset_cols + c) = H_col[d];
                 }
             }
         }
@@ -67,8 +67,8 @@ void apply_convolution(const Custom3DArray<float>& input, Custom3DArray<float>& 
                 jbutil::vector<float> L_row = convolve(row, true);  
                 jbutil::vector<float> H_row = convolve(row, false);
                 for (size_t r = 0; r < static_cast<size_t>(L_row.size()); ++r) {
-                    output_L(d, r, c) = L_row[r];
-                    output_H(d, r, c) = H_row[r];
+                    output(offset_depth + d, offset_rows + r, offset_cols + c) = L_row[r];
+                    output(offset_depth + d, offset_rows + r + rows / 2, offset_cols + c) = H_row[r];
                 }
             }
         }
@@ -82,8 +82,8 @@ void apply_convolution(const Custom3DArray<float>& input, Custom3DArray<float>& 
                 jbutil::vector<float> L_col = convolve(col, true);  
                 jbutil::vector<float> H_col = convolve(col, false); 
                 for (size_t c = 0; c < static_cast<size_t>(L_col.size()); ++c) {
-                    output_L(d, r, c) = L_col[c];
-                    output_H(d, r, c) = H_col[c];
+                    output(offset_depth + d, offset_rows + r, offset_cols + c) = L_col[c];
+                    output(offset_depth + d, offset_rows + r, offset_cols + c + cols / 2) = H_col[c];
                 }
             }
         }
@@ -91,45 +91,43 @@ void apply_convolution(const Custom3DArray<float>& input, Custom3DArray<float>& 
 }
 
 // Function to perform multi-level 3D wavelet transform
-Wavelet3DResult dwt_3d(const Custom3DArray<float>& data, int levels) {
+Custom3DArray<float> dwt_3d(const Custom3DArray<float>& data, int levels) {
     size_t depth = data.get_depth();
     size_t rows = data.get_rows();
     size_t cols = data.get_cols();
 
+    // Allocate a single Custom3DArray to store all results
+    Custom3DArray<float> result(depth, rows, cols);
+
     // Apply 1D convolution and subsampling along the first dimension
-    Custom3DArray<float> L(depth / 2, rows, cols);
-    Custom3DArray<float> H(depth / 2, rows, cols);
-    apply_convolution(data, L, H, 0);
+    apply_convolution(data, result, 0, 0, 0, 0);
 
     // Apply 1D convolution and subsampling along the second dimension
-    Custom3DArray<float> LL(depth / 2, rows / 2, cols);
-    Custom3DArray<float> LH(depth / 2, rows / 2, cols);
-    Custom3DArray<float> HL(depth / 2, rows / 2, cols);
-    Custom3DArray<float> HH(depth / 2, rows / 2, cols);
-    apply_convolution(L, LL, LH, 1);
-    apply_convolution(H, HL, HH, 1);
+    apply_convolution(result, result, 1, 0, 0, 0);
 
     // Apply 1D convolution and subsampling along the third dimension
-    Custom3DArray<float> LLL(depth / 2, rows / 2, cols / 2);
-    Custom3DArray<float> LLH(depth / 2, rows / 2, cols / 2);
-    Custom3DArray<float> LHL(depth / 2, rows / 2, cols / 2);
-    Custom3DArray<float> LHH(depth / 2, rows / 2, cols / 2);
-    Custom3DArray<float> HLL(depth / 2, rows / 2, cols / 2);
-    Custom3DArray<float> HLH(depth / 2, rows / 2, cols / 2);
-    Custom3DArray<float> HHL(depth / 2, rows / 2, cols / 2);
-    Custom3DArray<float> HHH(depth / 2, rows / 2, cols / 2);
-    apply_convolution(LL, LLL, LLH, 2);
-    apply_convolution(LH, LHL, LHH, 2);
-    apply_convolution(HL, HLL, HLH, 2);
-    apply_convolution(HH, HHL, HHH, 2);
+    apply_convolution(result, result, 2, 0, 0, 0);
 
     // If more levels are required, recursively apply dwt_3d to the LLL sub-band
     if (levels > 1) {
-        Wavelet3DResult next_level_result = dwt_3d(LLL, levels - 1);
-        // Combine the results from the current level and the next level
-        return {next_level_result.LLL, next_level_result.LLH, next_level_result.LHL, next_level_result.LHH,
-                next_level_result.HLL, next_level_result.HLH, next_level_result.HHL, next_level_result.HHH};
+        Custom3DArray<float> LLL_subband(depth / 2, rows / 2, cols / 2);
+        for (size_t d = 0; d < depth / 2; ++d) {
+            for (size_t r = 0; r < rows / 2; ++r) {
+                for (size_t c = 0; c < cols / 2; ++c) {
+                    LLL_subband(d, r, c) = result(d, r, c);
+                }
+            }
+        }
+        Custom3DArray<float> next_level_result = dwt_3d(LLL_subband, levels - 1);
+        // Copy the next level result back into the appropriate section of the result array
+        for (size_t d = 0; d < depth / 2; ++d) {
+            for (size_t r = 0; r < rows / 2; ++r) {
+                for (size_t c = 0; c < cols / 2; ++c) {
+                    result(d, r, c) = next_level_result(d, r, c);
+                }
+            }
+        }
     }
 
-    return {LLL, LLH, LHL, LHH, HLL, HLH, HHL, HHH};
+    return result;
 }
