@@ -1,19 +1,21 @@
 #include "DWT.h"
 #include "convolve.h"
 
-// Function to perform multi-level 3D wavelet transform
-Custom3DArray<float> dwt_3d(const Custom3DArray<float>& data, int levels, const float* lpf, const float* hpf, size_t filter_size) {
+DWT::DWT(const float* lpf, const float* hpf, size_t filter_size)
+    : convolve(lpf, hpf, filter_size) {}
+
+Array3D<float> DWT::dwt_3d(const Array3D<float>& data, int levels) const {
     if (levels < 1) {
         throw std::invalid_argument("Levels must be greater than or equal to 1");
     }
 
-    Custom3DArray<float> result = data;
+    Array3D<float> result = data;
 
     for (int level = 0; level < levels; ++level) {
         // Apply 1D convolution and subsampling along each dimension
-        convolution_dim0(result, result, lpf, hpf, filter_size);
-        convolution_dim1(result, result, lpf, hpf, filter_size);
-        convolution_dim2(result, result, lpf, hpf, filter_size);
+        convolve.dim0(result, result);
+        convolve.dim1(result, result);
+        convolve.dim2(result, result);
 
         // If it's the last level, return the result directly
         if (level == levels - 1) {
@@ -31,7 +33,7 @@ Custom3DArray<float> dwt_3d(const Custom3DArray<float>& data, int levels, const 
         new_cols = (new_cols % 2 == 0) ? new_cols : new_cols + 1;
 
         // Extract the LLL subband for the next level, halving dimensions
-        Custom3DArray<float> LLL_subband(new_depth, new_rows, new_cols);
+        Array3D<float> LLL_subband(new_depth, new_rows, new_cols);
         for (size_t d = 0; d < new_depth; ++d) {
             for (size_t r = 0; r < new_rows; ++r) {
                 for (size_t c = 0; c < new_cols; ++c) {

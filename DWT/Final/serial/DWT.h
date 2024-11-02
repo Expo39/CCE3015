@@ -4,7 +4,14 @@
 #include "../utilities/utils.h"
 #include "convolve.h"
 
-// Function to perform multi-level 3D wavelet transform
-Custom3DArray<float> dwt_3d(const Custom3DArray<float>& data, int levels, const float* lpf, const float* hpf, size_t filter_size);
+class DWT {
+public:
+    DWT(const float* lpf, const float* hpf, size_t filter_size);
+
+    Array3D<float> dwt_3d(const Array3D<float>& data, int levels) const;
+
+private:
+    Convolve convolve;
+};
 
 #endif // DWT_H

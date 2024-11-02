@@ -5,10 +5,20 @@
 #include "../utilities/jbutil.h"
 #include "../filters/filters.h"
 
-jbutil::vector<float> convolve(const jbutil::vector<float>& data, const float* lpf, const float* hpf, size_t filter_size, bool is_low_pass);
+class Convolve {
+public:
+    Convolve(const float* lpf, const float* hpf, size_t filter_size);
 
-void convolution_dim0(const Custom3DArray<float>& input, Custom3DArray<float>& output, const float* lpf, const float* hpf, size_t filter_size);
-void convolution_dim1(const Custom3DArray<float>& input, Custom3DArray<float>& output, const float* lpf, const float* hpf, size_t filter_size);
-void convolution_dim2(const Custom3DArray<float>& input, Custom3DArray<float>& output, const float* lpf, const float* hpf, size_t filter_size);
+    jbutil::vector<float> convolve(const jbutil::vector<float>& data, bool is_low_pass) const;
+
+    void dim0(const Array3D<float>& input, Array3D<float>& output) const;
+    void dim1(const Array3D<float>& input, Array3D<float>& output) const;
+    void dim2(const Array3D<float>& input, Array3D<float>& output) const;
+
+private:
+    const float* lpf;
+    const float* hpf;
+    size_t filter_size;
+};
 
 #endif // CONVOLVE_H

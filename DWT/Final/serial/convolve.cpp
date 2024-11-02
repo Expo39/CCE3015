@@ -1,6 +1,9 @@
 #include "convolve.h"
 
-jbutil::vector<float> convolve(const jbutil::vector<float>& data, const float* lpf, const float* hpf, size_t filter_size, bool is_low_pass) {
+Convolve::Convolve(const float* lpf, const float* hpf, size_t filter_size)
+    : lpf(lpf), hpf(hpf), filter_size(filter_size) {}
+
+jbutil::vector<float> Convolve::convolve(const jbutil::vector<float>& data, bool is_low_pass) const {
     size_t data_size = data.size();
     size_t N = data_size / 2;
     jbutil::vector<float> s_odd(N);
@@ -20,7 +23,11 @@ jbutil::vector<float> convolve(const jbutil::vector<float>& data, const float* l
         const float* filter = is_low_pass ? lpf : hpf;
 
         for (size_t j = 0; j < filter_size; ++j) {
-            sum += filter[j] * ((j % 2 == 0) ? s_odd[(i + j / 2) % N] : s_even[(i + j / 2) % N]);
+            size_t index = i + j / 2;
+            if (index >= N) {
+                index -= N;
+            }
+            sum += filter[j] * ((j % 2 == 0) ? s_odd[index] : s_even[index]);
         }
 
         result[i] = sum;
@@ -30,7 +37,7 @@ jbutil::vector<float> convolve(const jbutil::vector<float>& data, const float* l
 }
 
 // Function to apply 1D convolution along the first dimension (rows)
-void convolution_dim0(const Custom3DArray<float>& input, Custom3DArray<float>& output, const float* lpf, const float* hpf, size_t filter_size) {
+void Convolve::dim0(const Array3D<float>& input, Array3D<float>& output) const {
     size_t depth = input.get_depth();
     size_t rows = input.get_rows();
     size_t cols = input.get_cols();
@@ -41,8 +48,8 @@ void convolution_dim0(const Custom3DArray<float>& input, Custom3DArray<float>& o
             for (size_t r = 0; r < rows; ++r) {
                 row[r] = input(d, r, c);
             }
-            jbutil::vector<float> L_row = convolve(row, lpf, hpf, filter_size, true);  
-            jbutil::vector<float> H_row = convolve(row, lpf, hpf, filter_size, false);
+            jbutil::vector<float> L_row = convolve(row, true);  
+            jbutil::vector<float> H_row = convolve(row, false);
             for (size_t r = 0; r < static_cast<size_t>(L_row.size()); ++r) {
                 output(d, r, c) = L_row[r];
                 output(d, r + rows / 2, c) = H_row[r];
@@ -52,7 +59,7 @@ void convolution_dim0(const Custom3DArray<float>& input, Custom3DArray<float>& o
 }
 
 // Function to apply 1D convolution along the second dimension (columns)
-void convolution_dim1(const Custom3DArray<float>& input, Custom3DArray<float>& output, const float* lpf, const float* hpf, size_t filter_size) {
+void Convolve::dim1(const Array3D<float>& input, Array3D<float>& output) const {
     size_t depth = input.get_depth();
     size_t rows = input.get_rows();
     size_t cols = input.get_cols();
@@ -63,8 +70,8 @@ void convolution_dim1(const Custom3DArray<float>& input, Custom3DArray<float>& o
             for (size_t c = 0; c < cols; ++c) {
                 col[c] = input(d, r, c);
             }
-            jbutil::vector<float> L_col = convolve(col, lpf, hpf, filter_size, true);  
-            jbutil::vector<float> H_col = convolve(col, lpf, hpf, filter_size, false); 
+            jbutil::vector<float> L_col = convolve(col, true);  
+            jbutil::vector<float> H_col = convolve(col, false); 
             for (size_t c = 0; c < static_cast<size_t>(L_col.size()); ++c) {
                 output(d, r, c) = L_col[c];
                 output(d, r, c + cols / 2) = H_col[c];
@@ -74,7 +81,7 @@ void convolution_dim1(const Custom3DArray<float>& input, Custom3DArray<float>& o
 }
 
 // Function to apply 1D convolution along the third dimension (depth)
-void convolution_dim2(const Custom3DArray<float>& input, Custom3DArray<float>& output, const float* lpf, const float* hpf, size_t filter_size) {
+void Convolve::dim2(const Array3D<float>& input, Array3D<float>& output) const {
     size_t depth = input.get_depth();
     size_t rows = input.get_rows();
     size_t cols = input.get_cols();
@@ -85,8 +92,8 @@ void convolution_dim2(const Custom3DArray<float>& input, Custom3DArray<float>& o
             for (size_t d = 0; d < depth; ++d) {
                 depth_col[d] = input(d, r, c);
             }
-            jbutil::vector<float> L_depth = convolve(depth_col, lpf, hpf, filter_size, true);  
-            jbutil::vector<float> H_depth = convolve(depth_col, lpf, hpf, filter_size, false);
+            jbutil::vector<float> L_depth = convolve(depth_col, true);  
+            jbutil::vector<float> H_depth = convolve(depth_col, false);
             for (size_t d = 0; d < static_cast<size_t>(L_depth.size()); ++d) {
                 output(d, r, c) = L_depth[d];
                 output(d + depth / 2, r, c) = H_depth[d];

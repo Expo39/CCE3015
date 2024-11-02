@@ -5,14 +5,14 @@
 
 // Template class for a custom 3D array
 template <class T>
-class Custom3DArray {
+class Array3D {
 private:
     jbutil::vector<T> data; 
     size_t depth, rows, cols; 
 
 public:
     // Constructor to initialize the 3D array with given dimensions
-    Custom3DArray(size_t d, size_t r, size_t c) : data(d * r * c), depth(d), rows(r), cols(c) {}
+    Array3D(size_t d, size_t r, size_t c) : data(d * r * c), depth(d), rows(r), cols(c) {}
 
     // Non-const element access operator
     T& operator()(size_t d, size_t r, size_t c) {
