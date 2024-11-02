@@ -1,4 +1,5 @@
 #include "convolve.h"
+#include <cassert>
 
 Convolve::Convolve(const float* lpf, const float* hpf, size_t filter_size)
     : lpf(lpf), hpf(hpf), filter_size(filter_size) {}
@@ -32,6 +33,8 @@ jbutil::vector<float> Convolve::convolve(const jbutil::vector<float>& data, bool
 
         result[i] = sum;
     }
+
+    assert(static_cast<size_t>(result.size()) == N);
 
     return result;
 }

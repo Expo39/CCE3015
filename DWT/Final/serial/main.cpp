@@ -27,9 +27,9 @@ int main() {
     int levels = 1; 
 
     // Choose the wavelet filters
-    const float* lpf = DB2_L;
-    const float* hpf = DB2_H;
-    size_t filter_size = 4;
+    const float* lpf = DB1_L;
+    const float* hpf = DB1_H;
+    size_t filter_size = 2;
 
     // Create a DWT object
     DWT dwt(lpf, hpf, filter_size);
