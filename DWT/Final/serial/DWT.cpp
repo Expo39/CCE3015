@@ -2,7 +2,7 @@
 #include "convolve.h"
 
 // Constructor for the DWT class
-DWT::DWT(const float* lpf, const float* hpf, int filter_size)
+DWT::DWT(const float* lpf, const float* hpf, size_t filter_size)
     : convolve(lpf, hpf, filter_size) {}
 
 // Perform the 3D Discrete Wavelet Transform
@@ -19,9 +19,9 @@ Array3D<float> DWT::dwt_3d(const Array3D<float>& data, int levels) const {
 
     for (int level = 0; level < levels; ++level) {
         // Convolve and subsample ONLY within the bounds of the current level
-        convolve.dim0(result, result, depth, rows, cols);
-        convolve.dim1(result, result, depth, rows, cols);
-        convolve.dim2(result, result, depth, rows, cols);
+        convolve.dim0(result, depth, rows, cols);
+        convolve.dim1(result, depth, rows, cols);
+        convolve.dim2(result, depth, rows, cols);
 
         // Calculate new bounds for the next level's LLL subband
         depth = (depth + 1) / 2;
