@@ -1,35 +1,40 @@
 #include "io.h"
 
-Array3D<float> IO::read(const std::string& filename, size_t depth, size_t rows, size_t cols) { 
+// Function to read the data from a binary file and return it as a 3D array
+Array3D<float> IO::read(const string& filename, const string& shape_filename) {
+    
+    // Read the shape information from the shape file
+    jbutil::vector<size_t> shape = read_shape(shape_filename);
+    if (shape.size() != 3) {
+        cerr << "Invalid shape information" << endl;
+        return Array3D<float>(0, 0, 0);
+    }
+
+    size_t depth = shape[0];
+    size_t rows = shape[1];
+    size_t cols = shape[2];
+
     // Calculate new dimensions, rounding up to handle uneven dimensions 
     size_t new_depth = (depth % 2 == 0) ? depth : depth + 1; 
     size_t new_rows = (rows % 2 == 0) ? rows : rows + 1; 
     size_t new_cols = (cols % 2 == 0) ? cols : cols + 1;
 
+    // Create a 3D array with the new dimensions
     Array3D<float> data(new_depth, new_rows, new_cols);
-    std::ifstream file(filename, std::ios::binary);
+    ifstream file(filename, ios::binary);
 
+    // Check if the file was opened successfully
     if (!file) {
-        std::cerr << "Error opening file: " << filename << std::endl;
+        cerr << "Error opening file: " << filename << endl;
         return data; 
     }
 
-    // Check if the file contains enough data
-    file.seekg(0, std::ios::end);
-    size_t file_size = file.tellg();
-    file.seekg(0, std::ios::beg);
-    size_t expected_size = depth * rows * cols * sizeof(float);
-    if (file_size < expected_size) {
-        std::cerr << "File size is smaller than expected: " << filename << std::endl;
-        file.close();
-        return data;
-    }
-
+    // Read the data from the file into the 3D array
     for (size_t d = 0; d < depth; ++d) {
         for (size_t r = 0; r < rows; ++r) {
             file.read(reinterpret_cast<char*>(&data(d, r, 0)), cols * sizeof(float));
             if (!file) {
-                std::cerr << "Error reading row " << r << " of depth " << d << " from file: " << filename << std::endl;
+                cerr << "Error reading row " << r << " of depth " << d << " from file: " << filename << endl;
                 file.close();
                 return data;
             }
@@ -40,32 +45,38 @@ Array3D<float> IO::read(const std::string& filename, size_t depth, size_t rows, 
     return data; 
 }
 
-jbutil::vector<size_t> IO::read_shape(const std::string& shape_filename) {
+// Function to read the shape information from a shape file
+jbutil::vector<size_t> IO::read_shape(const string& shape_filename) {
     jbutil::vector<size_t> shape;
-    std::ifstream file(shape_filename);
+    ifstream file(shape_filename);
     
+    // Check if the shape file was opened successfully
     if (!file) {
-        std::cerr << "Error opening shape file: " << shape_filename << std::endl;
+        cerr << "Error opening shape file: " << shape_filename << endl;
         return shape;
     }
 
-    std::string line;
-    std::getline(file, line);
-    std::stringstream ss(line);
-    std::string item;
+    // Read the shape information from the file
+    string line;
+    getline(file, line);
+    stringstream ss(line);
+    string item;
     
-    while (std::getline(ss, item, ',')) {
-        shape.push_back(std::stoul(item));
+    while (getline(ss, item, ',')) {
+        shape.push_back(stoul(item));
     }
 
     file.close();
     return shape;
 }
 
-bool IO::export_data(const Array3D<float>& data, const std::string& filename) {
-    std::ofstream file(filename, std::ios::binary);
+// Function to export the 3D array data to a binary file
+bool IO::export_data(const Array3D<float>& data, const string& filename) {
+    ofstream file(filename, ios::binary);
+    
+    // Check if the file was opened successfully
     if (!file) {
-        std::cerr << "Error opening file for writing: " << filename << std::endl;
+        cerr << "Error opening file for writing: " << filename << endl;
         return false;
     }
 
@@ -78,6 +89,7 @@ bool IO::export_data(const Array3D<float>& data, const std::string& filename) {
     size_t sub_rows = rows / 2;
     size_t sub_cols = cols / 2;
 
+    // Lambda function to export a sub-band of the 3D array
     auto export_subband = [&](size_t offset_depth, size_t offset_rows, size_t offset_cols) {
         file.write(reinterpret_cast<const char*>(&sub_depth), sizeof(sub_depth));
         file.write(reinterpret_cast<const char*>(&sub_rows), sizeof(sub_rows));
@@ -90,7 +102,7 @@ bool IO::export_data(const Array3D<float>& data, const std::string& filename) {
         }
     };
 
-    // Export each subband
+    // Export each sub-band
     export_subband(0, 0, 0); // LLL
     export_subband(0, 0, sub_cols); // LLH
     export_subband(0, sub_rows, 0); // LHL

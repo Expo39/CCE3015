@@ -11,6 +11,9 @@ private:
     size_t depth, rows, cols; 
 
 public:
+    // Default constructor
+    Array3D() : depth(0), rows(0), cols(0) {}
+
     // Constructor to initialize the 3D array with given dimensions
     Array3D(size_t d, size_t r, size_t c) : data(d * r * c), depth(d), rows(r), cols(c) {}
 
@@ -37,8 +40,7 @@ public:
 
     // Get the total number of elements in the 3D array
     size_t size() const { return data.size(); }
+
 };
-
-
 
 #endif // UTILS_H

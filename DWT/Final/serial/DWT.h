@@ -4,13 +4,17 @@
 #include "../utilities/utils.h"
 #include "convolve.h"
 
+// Class for performing Discrete Wavelet Transform (DWT)
 class DWT {
 public:
-    DWT(const float* lpf, const float* hpf, size_t filter_size);
+    // Constructor to initialize the DWT with low-pass and high-pass filters
+    DWT(const float* lpf, const float* hpf, int filter_size);
 
+    // Function to perform 3D Discrete Wavelet Transform on the input data
     Array3D<float> dwt_3d(const Array3D<float>& data, int levels) const;
 
 private:
+    // Convolution object used for performing convolutions across dimensions
     Convolve convolve;
 };
 

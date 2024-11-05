@@ -4,32 +4,23 @@
 #include "../utilities/jbutil.h"
 #include "../filters/filters.h"
 
+using namespace std;
+
 int main() {
-    std::string binary_filename = "../data/11/11.bin";
-    std::string shape_filename = "../data/11/11_shape.txt";
-    std::string output_filename = "outputs/11out.bin";
-
-    // Read the shape information
-    jbutil::vector<size_t> shape = IO::read_shape(shape_filename);
-    if (shape.size() != 3) {
-        std::cerr << "Invalid shape information" << std::endl;
-        return 1;
-    }
-
-    size_t depth = shape[0];
-    size_t rows = shape[1];
-    size_t cols = shape[2];
+    string binary_filename = "../data/3/3.bin";
+    string shape_filename = "../data/3/3_shape.txt";
+    string output_filename = "outputs/3out.bin";
 
     // Read the DICOM data into an array
-    Array3D<float> dicom_data = IO::read(binary_filename, depth, rows, cols);
+    Array3D<float> dicom_data = IO::read(binary_filename, shape_filename);
 
     // Set the number of levels for the multi-level transform
     int levels = 1; 
 
     // Choose the wavelet filters
-    const float* lpf = DB1_L;
-    const float* hpf = DB1_H;
-    size_t filter_size = 2;
+    const float* lpf = DB2_L;
+    const float* hpf = DB2_H;
+    size_t filter_size = 4;
 
     // Create a DWT object
     DWT dwt(lpf, hpf, filter_size);
@@ -43,16 +34,13 @@ int main() {
     double end_time = jbutil::gettime();
     double elapsed_time = end_time - start_time;
 
-    std::cout << "3D Wavelet Transform completed successfully." << std::endl;
-    std::cout << "Time taken for 3D Wavelet Transform: " << elapsed_time << " seconds" << std::endl;
+    cout << "3D Wavelet Transform completed successfully." << endl;
+    cout << "Time taken for 3D Wavelet Transform: " << elapsed_time << " seconds" << endl;
 
     // Export the transformed data to a binary file
-    if (!IO::export_data(wavelet_3d, output_filename)) {
-        std::cerr << "Failed to export data to binary file" << std::endl;
-        return 1;
-    }
+    IO::export_data(wavelet_3d, output_filename);
 
-    std::cout << "Data exported to " << output_filename << " successfully." << std::endl;
+    cout << "Data exported to " << output_filename << " successfully." << endl;
 
     return 0;
 }

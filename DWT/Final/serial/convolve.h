@@ -5,20 +5,22 @@
 #include "../utilities/jbutil.h"
 #include "../filters/filters.h"
 
+using namespace jbutil;
+
 class Convolve {
 public:
-    Convolve(const float* lpf, const float* hpf, size_t filter_size);
+    Convolve(const float* lpf, const float* hpf, int filter_size);
 
-    jbutil::vector<float> convolve(const jbutil::vector<float>& data, bool is_low_pass) const;
+    // convolve.h
+    void dim0(const Array3D<float>& input, Array3D<float>& output, size_t depth_limit, size_t row_limit, size_t col_limit) const;
+    void dim1(const Array3D<float>& input, Array3D<float>& output, size_t depth_limit, size_t row_limit, size_t col_limit) const;
+    void dim2(const Array3D<float>& input, Array3D<float>& output, size_t depth_limit, size_t row_limit, size_t col_limit) const;
 
-    void dim0(const Array3D<float>& input, Array3D<float>& output) const;
-    void dim1(const Array3D<float>& input, Array3D<float>& output) const;
-    void dim2(const Array3D<float>& input, Array3D<float>& output) const;
 
 private:
     const float* lpf;
     const float* hpf;
-    size_t filter_size;
+    int filter_size;
 };
 
 #endif // CONVOLVE_H
