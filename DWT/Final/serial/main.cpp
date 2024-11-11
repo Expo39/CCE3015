@@ -22,7 +22,7 @@ int main() {
     const float* hpf = DB2_H;
     size_t filter_size = 4;
 
-    // Create a DWT object
+    // Create a DWT object to store filter information
     DWT dwt(lpf, hpf, filter_size);
 
     // Measure the time taken for the 3D wavelet transform

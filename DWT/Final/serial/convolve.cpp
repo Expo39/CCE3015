@@ -12,8 +12,6 @@ void Convolve::dim0(Array3D<float>& data, size_t depth_limit, size_t row_limit, 
 
     for (size_t d = 0; d < depth_limit; ++d) {
         for (size_t c = 0; c < col_limit; ++c) {
-            vector<float> L_row(row_limit / 2); 
-            vector<float> H_row(row_limit / 2); 
 
             for (size_t i = 0; i < row_limit / 2; ++i) {
                 float sum_low = 0.0f;
@@ -40,8 +38,6 @@ void Convolve::dim1(Array3D<float>& data, size_t depth_limit, size_t row_limit, 
 
     for (size_t d = 0; d < depth_limit; ++d) {
         for (size_t r = 0; r < row_limit; ++r) {
-            vector<float> L_col(col_limit / 2);
-            vector<float> H_col(col_limit / 2); 
 
             for (size_t i = 0; i < col_limit / 2; ++i) {
                 float sum_low = 0.0f;
@@ -67,9 +63,7 @@ void Convolve::dim2(Array3D<float>& data, size_t depth_limit, size_t row_limit, 
     Array3D<float> temp(data); // Create a temporary copy to avoid overrding the original data
 
     for (size_t r = 0; r < row_limit; ++r) {
-        for (size_t c = 0; c < col_limit; ++c) {
-            vector<float> L_depth(depth_limit / 2); 
-            vector<float> H_depth(depth_limit / 2); 
+        for (size_t c = 0; c < col_limit; ++c) { 
 
             for (size_t i = 0; i < depth_limit / 2; ++i) {
                 float sum_low = 0.0f;

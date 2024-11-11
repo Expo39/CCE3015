@@ -15,12 +15,12 @@ Array3D<float> IO::read(const string& filename, const string& shape_filename) {
     size_t cols = shape[2];
 
     // Calculate new dimensions, rounding up to handle uneven dimensions 
-    size_t new_depth = (depth % 2 == 0) ? depth : depth + 1; 
-    size_t new_rows = (rows % 2 == 0) ? rows : rows + 1; 
-    size_t new_cols = (cols % 2 == 0) ? cols : cols + 1;
+    // size_t new_depth = (depth % 2 == 0) ? depth : depth + 1; 
+    // size_t new_rows = (rows % 2 == 0) ? rows : rows + 1; 
+    // size_t new_cols = (cols % 2 == 0) ? cols : cols + 1;
 
     // Create a 3D array with the new dimensions
-    Array3D<float> data(new_depth, new_rows, new_cols);
+    Array3D<float> data(depth, rows, cols);
     ifstream file(filename, ios::binary);
 
     // Check if the file was opened successfully

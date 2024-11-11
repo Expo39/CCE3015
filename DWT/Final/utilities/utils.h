@@ -41,6 +41,13 @@ public:
     // Get the total number of elements in the 3D array
     size_t size() const { return data.size(); }
 
+    // Resize the 3D array
+    void resize(size_t new_depth, size_t new_rows, size_t new_cols) {
+        data.resize(new_depth * new_rows * new_cols);
+        depth = new_depth;
+        rows = new_rows;
+        cols = new_cols;
+    }
 };
 
 #endif // UTILS_H

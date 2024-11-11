@@ -1,7 +1,7 @@
 #include "DWT.h"
 #include "convolve.h"
 
-// Constructor for the DWT class
+// Constructor for the DWT class to be used for convolving the filters
 DWT::DWT(const float* lpf, const float* hpf, size_t filter_size)
     : convolve(lpf, hpf, filter_size) {}
 
