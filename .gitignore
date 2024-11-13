@@ -8,5 +8,10 @@ lab2/outputs/
 # Ignore the .vscode folder
 .vscode/
 
+DWT_copy/
+
+
+DWT1/
+
 gmon.out
 profile.txt

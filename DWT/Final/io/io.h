@@ -17,6 +17,9 @@ public:
 
     // Function to export the 3D array data to a binary file
     static bool export_data(const Array3D<float>& data, const std::string& filename);
+
+    static bool export_inverse(const Array3D<float>& data, const std::string& filename);
+    
 };
 
 #endif // IO_H

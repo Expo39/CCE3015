@@ -7,6 +7,9 @@ extern float DB1_H[2];
 extern float DB2_L[4];
 extern float DB2_H[4];
 
+extern float DB2_I_L[4];
+extern float DB2_I_H[4];
+
 extern float DB3_L[6];
 extern float DB3_H[6];
 

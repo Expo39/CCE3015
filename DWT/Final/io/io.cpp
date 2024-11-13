@@ -115,3 +115,28 @@ bool IO::export_data(const Array3D<float>& data, const string& filename) {
     file.close();
     return true;
 }
+
+// Function to export the inverse transform data to a binary file
+bool IO::export_inverse(const Array3D<float>& data, const std::string& filename) {
+    std::ofstream file(filename, std::ios::binary);
+    
+    // Check if the file was opened successfully
+    if (!file) {
+        std::cerr << "Error opening file for writing: " << filename << std::endl;
+        return false;
+    }
+
+    size_t depth = data.get_depth();
+    size_t rows = data.get_rows();
+    size_t cols = data.get_cols();
+
+    // Write the data to the file without the dimensions
+    for (size_t d = 0; d < depth; ++d) {
+        for (size_t r = 0; r < rows; ++r) {
+            file.write(reinterpret_cast<const char*>(&data(d, r, 0)), cols * sizeof(float));
+        }
+    }
+
+    file.close();
+    return true;
+}

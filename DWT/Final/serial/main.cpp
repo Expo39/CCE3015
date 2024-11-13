@@ -1,5 +1,6 @@
 #include "DWT.h"
 #include "convolve.h"
+#include "inverse.h"
 #include "../io/io.h"
 #include "../utilities/jbutil.h"
 #include "../filters/filters.h"
@@ -10,6 +11,7 @@ int main() {
     string binary_filename = "../data/3/3.bin";
     string shape_filename = "../data/3/3_shape.txt";
     string output_filename = "outputs/3out.bin";
+    string inverse_output_filename = "outputs/3inverse.bin";
 
     // Read the DICOM data into an array
     Array3D<float> dicom_data = IO::read(binary_filename, shape_filename);
@@ -20,6 +22,11 @@ int main() {
     // Choose the wavelet filters
     const float* lpf = DB2_L;
     const float* hpf = DB2_H;
+
+    // Choose the inverse wavelet filters
+    const float* Ilpf = DB2_I_L;
+    const float* Ihpf = DB2_I_H;
+
     size_t filter_size = 4;
 
     // Create a DWT object to store filter information
@@ -41,6 +48,18 @@ int main() {
     IO::export_data(wavelet_3d, output_filename);
 
     cout << "Data exported to " << output_filename << " successfully." << endl;
+    
+    // Create an Inverse object to store filter information
+    Inverse inverse(Ilpf, Ihpf, filter_size);
+
+    // Perform the inverse 3D wavelet transform
+    Array3D<float> reconstructed_data = inverse.inverse_dwt_3d(wavelet_3d, levels);
+
+    // Export the reconstructed data to a binary file
+    IO::export_inverse(reconstructed_data, inverse_output_filename);
+
+    cout << "Inverse 3D Wavelet Transform completed successfully." << endl;
+    cout << "Data exported to " << inverse_output_filename << " successfully." << endl;
 
     return 0;
 }

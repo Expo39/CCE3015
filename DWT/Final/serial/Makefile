@@ -15,7 +15,7 @@ DEBUG_TARGET = build/DEBUG
 RELEASE_TARGET = build/DWT
 
 # Source files
-SRCS = main.cpp ../io/io.cpp ../filters/filters.cpp DWT.cpp convolve.cpp
+SRCS = main.cpp ../io/io.cpp ../filters/filters.cpp DWT.cpp convolve.cpp inverse.cpp
 
 # Object files
 DEBUG_OBJS = $(patsubst %.cpp, build/debug/%.o, $(notdir $(SRCS)))
