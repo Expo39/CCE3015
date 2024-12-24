@@ -1,16 +1,10 @@
-# Ignore the Doc folder
-Doc/
+# Ignore everything
+*
 
-# Ignore .pgm files in lab2/inputs and lab2/outputs
-lab2/inputs/
-lab2/outputs/
-
-# Ignore the .vscode folder
-.vscode/
-
-DWT_copy/
-
-DWT/python/Test_Sets/
-
-gmon.out
-profile.txt
+# Except agal0107-Assignment1 and inverse_1
+!agal0107-Assignment1
+!agal0107-Assignment1/**
+agal0107-Assignment1/python/Test_sets/
+!inverse_1
+!inverse_1/**
+inverse_1/python/Test_sets/
